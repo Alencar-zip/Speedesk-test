@@ -1,0 +1,6 @@
+{
+  "name": "Speedesk Marketplace",
+  "description": "Mercado futurista de ativos digitais de alta fidelidade e apresentações cibernéticas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
