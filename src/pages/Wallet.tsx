@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 import { Transaction } from '../types';
 
 interface WalletProps {
@@ -23,6 +24,22 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
   const [pixKeyValue, setPixKeyValue] = useState<string>('');
   const [selectedBank, setSelectedBank] = useState<string>('NuBank');
   const [loadingWithdraw, setLoadingWithdraw] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(balance);
+
+  useEffect(() => {
+    const getBalance = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('wallet')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        if (data) setWalletBalance(data.available_balance);
+      }
+    };
+    getBalance();
+  }, []);
 
   const handleSimulatedDeposit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +52,8 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
     setLoadingDeposit(true);
     setTimeout(() => {
       onAddFunds(amount);
-      
+      setWalletBalance(prev => prev + amount);
+
       const txId = `TX-${Math.floor(1000 + Math.random() * 9000)}`;
       const formattedDate = new Date().toLocaleDateString('pt-BR', {
         day: '2-digit',
@@ -67,7 +85,7 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
       return;
     }
 
-    if (amount > balance) {
+    if (amount > walletBalance) {
       alert('Saldo insuficiente na carteira para realizar este saque.');
       return;
     }
@@ -81,6 +99,7 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
     setTimeout(() => {
       const success = onWithdrawFunds(amount);
       if (success) {
+        setWalletBalance(prev => prev - amount);
         const txId = `TX-${Math.floor(1000 + Math.random() * 9000)}`;
         const formattedDate = new Date().toLocaleDateString('pt-BR', {
           day: '2-digit',
@@ -117,7 +136,7 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
 
   return (
     <div className="max-w-5xl mx-auto pb-20 animate-fade-in relative">
-      
+
       {/* Background ambient light glowing effects */}
       <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
 
@@ -143,19 +162,19 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
             <div className="flex items-baseline gap-2">
               <span className="text-2xl text-[#00e0ff] font-mono">R$</span>
               <span className="text-5xl font-bold text-white tracking-tighter font-display">
-                {balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {walletBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
           </div>
           <div className="flex gap-4">
-            <button 
+            <button
               onClick={() => setShowWithdrawModal(true)}
               className="bg-[#00e0ff] text-[#00363f] font-bold px-8 py-3 rounded-xl text-xs uppercase shadow-[0_0_20px_rgba(0,224,255,0.3)] hover:scale-105 transition-all duration-300 cursor-pointer"
               id="wallet-withdraw-trigger-btn"
             >
               Solicitar Saque
             </button>
-            <button 
+            <button
               onClick={() => setShowDepositModal(true)}
               className="bg-white/5 text-white border border-white/10 px-6 py-3 rounded-xl text-xs uppercase hover:bg-white/10 cursor-pointer transition-all duration-300"
               id="wallet-deposit-trigger-btn"
@@ -193,7 +212,7 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
             <span className="px-3 py-1 bg-white/5 rounded-full text-[9px] font-mono text-[#baf2ff] font-semibold">ULTIMAS OPERAÇÕES</span>
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="text-[10px] font-mono text-[#bac9cd] uppercase tracking-widest bg-white/2">
@@ -216,7 +235,7 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
                   <tr key={tx.id} className="hover:bg-white/2 transition-colors">
                     <td className="p-6 font-mono text-[#bac9cd] text-xs leading-normal">
                       {tx.date}
-                      <br/>
+                      <br />
                       <span className="text-[9px] opacity-50">IP: {mockIp}</span>
                     </td>
                     <td className="p-6">
@@ -230,7 +249,7 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
                     </td>
                     <td className="p-6 text-right">
                       {!isSuccess ? (
-                        <button 
+                        <button
                           onClick={() => alert(`Contestação da transação ${tx.id} iniciada com sucesso. Nossa equipe de conformidade analisará o caso em até 24h.`)}
                           className="px-3 py-1.5 border border-[#ffb4ab]/30 text-[#ffb4ab] rounded-lg text-[10px] font-mono uppercase hover:bg-[#ffb4ab]/10 cursor-pointer transition-all duration-200"
                         >
@@ -259,7 +278,7 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
       {showDepositModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 animate-fade-in">
           <div className="bg-[#191c1e] border border-primary/20 rounded-3xl max-w-md w-full p-6 shadow-[0_0_30px_rgba(0,224,255,0.15)] relative space-y-6">
-            <button 
+            <button
               onClick={() => setShowDepositModal(false)}
               className="absolute top-4 right-4 text-on-surface-variant hover:text-white cursor-pointer"
               title="Fechar"
@@ -268,7 +287,7 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
             </button>
 
             <div className="text-center">
-              <span className="material-symbols-outlined text-4xl text-primary mb-2 select-none" style={{fontVariationSettings: "'FILL' 1"}}>add_moderator</span>
+              <span className="material-symbols-outlined text-4xl text-primary mb-2 select-none" style={{ fontVariationSettings: "'FILL' 1" }}>add_moderator</span>
               <h3 className="text-lg font-bold font-display text-white">Adicionar Fundos via Pix</h3>
               <p className="text-[11px] text-on-surface-variant mt-1">Gere uma cobrança Pix imediata para recarregar.</p>
             </div>
@@ -297,11 +316,10 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
                     key={val}
                     type="button"
                     onClick={() => setDepositAmount(val)}
-                    className={`p-2 rounded-lg font-mono text-xs border text-center transition-all cursor-pointer ${
-                      depositAmount === val 
-                        ? 'border-primary bg-primary/10 text-primary font-bold' 
+                    className={`p-2 rounded-lg font-mono text-xs border text-center transition-all cursor-pointer ${depositAmount === val
+                        ? 'border-primary bg-primary/10 text-primary font-bold'
                         : 'border-white/5 bg-black/20 text-[#bac9cd]'
-                    }`}
+                      }`}
                   >
                     +R$ {val}
                   </button>
@@ -334,7 +352,7 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
       {showWithdrawModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 animate-fade-in">
           <div className="bg-[#191c1e] border border-primary/20 rounded-3xl max-w-md w-full p-6 shadow-[0_0_30px_rgba(0,224,255,0.15)] relative space-y-6">
-            <button 
+            <button
               onClick={() => setShowWithdrawModal(false)}
               className="absolute top-4 right-4 text-on-surface-variant hover:text-white cursor-pointer"
               title="Fechar"
@@ -343,7 +361,7 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
             </button>
 
             <div className="text-center">
-              <span className="material-symbols-outlined text-4xl text-primary mb-2 select-none" style={{fontVariationSettings: "'FILL' 1"}}>account_balance</span>
+              <span className="material-symbols-outlined text-4xl text-primary mb-2 select-none" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
               <h3 className="text-lg font-bold font-display text-white">Solicitar Retirada Pix</h3>
               <p className="text-[11px] text-on-surface-variant mt-1">Transfira seus fundos livremente de volta para seu banco.</p>
             </div>
@@ -357,14 +375,14 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
                     type="number"
                     required
                     min="20"
-                    max={balance}
+                    max={walletBalance}
                     placeholder="1000"
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
                     className="w-full bg-[#101415] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm font-mono text-white focus:border-primary outline-none transition-all"
                   />
                 </div>
-                <div className="text-[9px] text-[#bac9cd]/40 text-right">Saldo máximo resgatável: R$ {balance.toLocaleString('pt-BR')}</div>
+                <div className="text-[9px] text-[#bac9cd]/40 text-right">Saldo máximo resgatável: R$ {walletBalance.toLocaleString('pt-BR')}</div>
               </div>
 
               {/* Bank selector options */}
