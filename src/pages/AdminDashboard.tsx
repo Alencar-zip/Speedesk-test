@@ -13,7 +13,6 @@ interface AdminUser {
   email: string;
   role: 'Admin' | 'Moderador' | 'Criador' | 'Comprador' | 'Suporte';
   verified: boolean;
-  canPublishWithoutScan: boolean;
   withdrawsUnlocked: boolean;
   complianceAuditing: boolean;
   avatar: string;
@@ -57,7 +56,6 @@ export default function AdminDashboard({ products, onSetProducts, currentUsernam
         email: 'alex.trader@speedesk.io',
         role: 'Criador',
         verified: true,
-        canPublishWithoutScan: false,
         withdrawsUnlocked: true,
         complianceAuditing: false,
         avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAgC4uQXopo7y3MwccZzzte0cJVY3c4i1Bq6BObMcuA_mP2K0EEb2utB_6F5w1qNJ7U6fp6qwd4EwLKE_kRLIwgh0gey7SEZe93Tg8DgwZxW4fMtnh1LClgZZ2cjciWIaKwXlU4M-4Yr8v3dZngtNqijVrz_lHZE8vJyVGVqtAHvB45NG270FvzQMWTjYTumWNygdX9h-da1wVaulBzv1kbfR1o_Nok0YzizEgcp1I66JwWyoQrG0p8GxaKC5X1QGe98a-96FHjuA"
@@ -68,7 +66,6 @@ export default function AdminDashboard({ products, onSetProducts, currentUsernam
         email: 'admin@speedesk.io',
         role: 'Admin',
         verified: true,
-        canPublishWithoutScan: true,
         withdrawsUnlocked: true,
         complianceAuditing: true,
         avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBpGHH305G9dKCQllWnZ0niT9Q-xI5VVdBvla0H89bGML1OM7tVjKC364MZrDgIsEFJxEr-jG4SYaOGYcJQ4lDXkTgYqzRM9cDJMj8g7wNas_9809VTtg-IusjWAd1vb1Y_ytGf3udNQABG_dABtoSFyOBx3u2Y5bSDamGRIrAKqmvfPBltmDsAU3lVX4NvYpIU0-FJLGEuuJcS_JN7vHhg3-b5iJezDDU3sInlXdEnH1-lMv-YCWgxyaFrCz-gMPeX38-DP_RccQ"
@@ -79,7 +76,6 @@ export default function AdminDashboard({ products, onSetProducts, currentUsernam
         email: 'suporte@speedesk.io',
         role: 'Suporte',
         verified: true,
-        canPublishWithoutScan: true,
         withdrawsUnlocked: true,
         complianceAuditing: true,
         avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=256"
@@ -90,7 +86,6 @@ export default function AdminDashboard({ products, onSetProducts, currentUsernam
         email: 'arthur.compliance@speedesk.io',
         role: 'Moderador',
         verified: true,
-        canPublishWithoutScan: true,
         withdrawsUnlocked: true,
         complianceAuditing: true,
         avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAeqSDtqw3mLx2D7OFa1K_aJtvLyKwcOD4rFdwAF4l5myLeX4EDRWrz8bwzu7CG6UZ5CNT0DAc34WdXJPrAl7qD7H_ViT830SKw_beNDhhdYIw5MIpJZCC5P6UWKGjT5CGH0UqDdzHB-at9DUA18ccYWcX7xjtJLUIM4Kzzi0EPJZOo-okuy3juS98-g84-2i61eTCvAotCuM3VyEnHWe1mZXmLJDDI5Q_5KzcnrcRDsVmz8eRCIPAIQncQV02H03lj9MYdsk17kg"
@@ -101,7 +96,6 @@ export default function AdminDashboard({ products, onSetProducts, currentUsernam
         email: 'guto99@gmail.com',
         role: 'Comprador',
         verified: false,
-        canPublishWithoutScan: false,
         withdrawsUnlocked: false,
         complianceAuditing: false,
         avatar: ""

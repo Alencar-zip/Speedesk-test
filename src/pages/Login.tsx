@@ -24,28 +24,20 @@ export default function Login({ onLogin }: LoginProps) {
   const navigate = useNavigate();
 
   // Login form states
-  const [loginUsername, setLoginUsername] = useState('admin');
-  const [loginPassword, setLoginPassword] = useState('admin');
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   // Registration form states
   const [regUsername, setRegUsername] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
-  const [regRole, setRegRole] = useState<'Admin' | 'Moderador' | 'Criador' | 'Comprador' | 'Suporte'>('Admin');
+  const [regRole, setRegRole] = useState<'Admin' | 'Moderador' | 'Criador' | 'Comprador' | 'Suporte'>('Criador');
   const [regBio, setRegBio] = useState('');
 
   // Initial database of pre-seeded accounts
   const [usersDb, setUsersDb] = useState<StoredUser[]>(() => {
-    const saved = localStorage.getItem('speedesk_registered_users_db');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        // use default
-      }
-    }
-    return [
+    const defaultUsers: StoredUser[] = [
       {
         username: 'admin',
         email: 'admin@speedesk.io',
@@ -67,6 +59,16 @@ export default function Login({ onLogin }: LoginProps) {
         memberSince: 'Jun, 2026'
       },
       {
+        username: 'cliente',
+        email: 'cliente@speedesk.io',
+        password: 'cliente',
+        role: 'Comprador',
+        bio: 'Cliente ativo do ecossistema Speedesk, buscando slides de alta fidelidade.',
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=256',
+        verified: true,
+        memberSince: 'Jun, 2026'
+      },
+      {
         username: 'ProTrader99',
         email: 'alex.trader@speedesk.io',
         password: 'password',
@@ -77,6 +79,25 @@ export default function Login({ onLogin }: LoginProps) {
         memberSince: 'Mar, 2026'
       }
     ];
+
+    const saved = localStorage.getItem('speedesk_registered_users_db');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const updated = [...parsed];
+          defaultUsers.forEach(du => {
+            if (!updated.some(u => u.username.toLowerCase() === du.username.toLowerCase())) {
+              updated.push(du);
+            }
+          });
+          return updated;
+        }
+      } catch (e) {
+        // use default
+      }
+    }
+    return defaultUsers;
   });
 
   // Save users database
@@ -271,7 +292,7 @@ export default function Login({ onLogin }: LoginProps) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   {/* Password */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold">Senha de Acesso</label>
@@ -283,21 +304,6 @@ export default function Login({ onLogin }: LoginProps) {
                       className="w-full bg-[#101415] border border-white/10 focus:border-primary rounded-xl py-3 px-4 text-xs font-mono text-white outline-none"
                       placeholder="Escolha uma senha"
                     />
-                  </div>
-
-                  {/* Level Role Dropdown */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-mono text-primary uppercase tracking-wider font-bold">Função / Cargo no Sistema</label>
-                    <select
-                      value={regRole}
-                      onChange={(e) => setRegRole(e.target.value as any)}
-                      className="w-full bg-[#101415] border border-white/10 focus:border-primary rounded-xl py-3 px-3 text-xs font-mono text-white outline-none cursor-pointer"
-                    >
-                      <option value="Admin">Admin (Acesso ao Painel Admin)</option>
-                      <option value="Suporte">Suporte (Atendimento a Tickets)</option>
-                      <option value="Criador">Criador (Vendedor de Slideworks)</option>
-                      <option value="Comprador">Comprador (Cliente do Mercado)</option>
-                    </select>
                   </div>
                 </div>
 
@@ -311,15 +317,6 @@ export default function Login({ onLogin }: LoginProps) {
                     className="w-full bg-[#101415] border border-white/10 focus:border-primary rounded-xl py-2 px-4 text-xs font-mono text-white outline-none"
                     placeholder="Fale um pouco sobre você ou sua empresa..."
                   />
-                </div>
-
-                {/* Help tip instruction based on selected role */}
-                <div className="bg-[#191c1e] p-3 rounded-xl border border-white/5 text-[9px] font-mono text-[#bac9cd]/60 leading-normal">
-                  <p className="font-bold text-white mb-0.5">ℹ INSTRUÇÕES DE NÍVEL DE ACESSO:</p>
-                  {regRole === 'Admin' && 'Como Administrador Geral, você poderá aprovar e bloquear ativos de criadores, gerenciar logs de malware e alterar permissões de outros usuários pelo Painel de Administração.'}
-                  {regRole === 'Suporte' && 'Como equipe de Suporte Técnico, você poderá moderar, analisar logs e prover ajuda direta respondendo aos tickets de clientes no Suporte Híbrido.'}
-                  {regRole === 'Criador' && 'Como Criador, seu foco será publicar arquivos ZIP ou layouts e acompanhar faturamentos no Painel Criador.'}
-                  {regRole === 'Comprador' && 'Como Comprador, seu foco será navegar e adquirir ativos na loja utilizando recursos simulados.'}
                 </div>
 
                 <button
@@ -407,36 +404,29 @@ export default function Login({ onLogin }: LoginProps) {
               </form>
             )}
 
-            {/* PRE-CONVERGED DIRECT DELEGATED QUICK TEST LOGINS */}
+            {/* DEMO LOGINS GUIDELINES INDICATOR */}
             {!isRegisterMode && (
-              <div className="border-t border-white/5 pt-4 space-y-3 text-left">
-                <span className="text-[9px] font-mono font-bold text-on-surface-variant uppercase tracking-widest block">
-                  Acesso Rápido de Teste (Clique para Entrar Instantaneamente)
+              <div className="border-t border-white/5 pt-4 text-center space-y-1 bg-[#161a1b]/40 rounded-2xl p-3.5 border border-white/5">
+                <span className="text-[9px] font-mono font-bold text-primary uppercase tracking-widest block">
+                  CONTAS DE ACESSO DE DEMONSTRAÇÃO
                 </span>
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin('admin')}
-                    className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all text-[10px] font-mono tracking-wide font-black uppercase cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-xs">admin_panel_settings</span>
-                    Admin (admin)
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin('suporte')}
-                    className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#c0c1ff]/10 border border-[#c0c1ff]/20 text-[#c0c1ff] hover:bg-[#c0c1ff]/20 transition-all text-[10px] font-mono tracking-wide font-black uppercase cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-xs">support_agent</span>
-                    Suporte (suporte)
-                  </button>
-                </div>
-
-                <p className="text-[9px] font-mono text-[#bac9cd]/40 leading-normal text-center mt-1">
-                  DICA: Você também pode usar o formulário de cadastro acima para registrar uma conta personalizada com novas funções!
+                <p className="text-[10px] font-mono text-white/60 leading-relaxed">
+                  Para analisar cada ambiente, digite no formulário de login (Usuário / Senha):
                 </p>
+                <div className="grid grid-cols-3 gap-1.5 pt-2 text-[9px] font-mono">
+                  <div className="bg-[#1c2122] rounded-xl p-1.5 border border-white/5">
+                    <span className="text-primary font-bold block">Admin</span>
+                    <span className="text-[#bac9cd]/75">admin / admin</span>
+                  </div>
+                  <div className="bg-[#1c2122] rounded-xl p-1.5 border border-white/5">
+                    <span className="text-[#c0c1ff] font-bold block font-sans uppercase text-[7.5px]">Suporte</span>
+                    <span className="text-[#bac9cd]/75">suporte / suporte</span>
+                  </div>
+                  <div className="bg-[#1c2122] rounded-xl p-1.5 border border-white/5">
+                    <span className="text-yellow-400 font-bold block font-sans uppercase text-[7.5px]">Cliente</span>
+                    <span className="text-[#bac9cd]/75 font-sans">cliente / cliente</span>
+                  </div>
+                </div>
               </div>
             )}
           </>
