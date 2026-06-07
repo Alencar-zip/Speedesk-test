@@ -37,6 +37,9 @@ export interface Transaction {
   status: 'success' | 'pending' | 'expense';
 }
 
+// --- CORREÇÃO AQUI: Criando e exportando o UserRole ---
+export type UserRole = 'Admin' | 'Moderador' | 'User' | 'Suporte';
+
 export interface UserProfile {
   username: string;
   email: string;
@@ -44,8 +47,7 @@ export interface UserProfile {
   avatar: string;
   verified: boolean;
   memberSince: string;
-  // CARGOS UNIFICADOS: Removido Comprador/Criador e adicionado Usuário
-  role?: 'Admin' | 'Moderador' | 'User' | 'Suporte'; 
+  role?: UserRole; // Agora usa o tipo exportado acima
 }
 
 export interface AppSettings {
