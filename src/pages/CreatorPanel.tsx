@@ -164,8 +164,8 @@ export default function CreatorPanel({ products, onUpdateProductStatus, onUpdate
                     key={status}
                     onClick={() => setFilterStatus(status)}
                     className={`px-3 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase transition-all tracking-wider ${filterStatus === status
-                        ? 'bg-primary/20 text-primary border border-primary/20 shadow-xs'
-                        : 'text-[#bac9cd] hover:text-white bg-white/5 border border-white/10 hover:bg-white/10'
+                      ? 'bg-primary/20 text-primary border border-primary/20 shadow-xs'
+                      : 'text-[#bac9cd] hover:text-white bg-white/5 border border-white/10 hover:bg-white/10'
                       }`}
                   >
                     {status === 'all' ? 'Ver Todos' : status === 'analyzing' ? 'Em análise' : status === 'approved' ? 'Aprovados' : 'Quarentena'}
@@ -191,8 +191,8 @@ export default function CreatorPanel({ products, onUpdateProductStatus, onUpdate
                     key={p.id}
                     onClick={() => setSelectedProductId(p.id)}
                     className={`bg-[#1d2022] rounded-2xl p-4 border transition-all cursor-pointer flex items-center justify-between gap-4 ${isSelected
-                        ? 'border-primary/40 bg-[#1d2022] shadow-[0_4px_25px_rgba(0,186,255,0.05)]'
-                        : 'border-white/5 hover:border-white/10 hover:bg-[#1d2022]'
+                      ? 'border-primary/40 bg-[#1d2022] shadow-[0_4px_25px_rgba(0,186,255,0.05)]'
+                      : 'border-white/5 hover:border-white/10 hover:bg-[#1d2022]'
                       }`}
                   >
                     <div className="flex items-center gap-3.5 truncate min-w-0">

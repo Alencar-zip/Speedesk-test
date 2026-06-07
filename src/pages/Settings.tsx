@@ -115,7 +115,7 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
     setTimeout(() => {
       setCurrentTier(tier);
       setIsProcessingUpgrade(false);
-      
+
       const newInvoice = {
         id: `INV-${Math.floor(Math.random() * 9000) + 1000}`,
         date: new Date().toLocaleDateString('pt-BR'),
@@ -123,7 +123,7 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
         status: 'pago'
       };
       setInvoiceHistory(prev => [newInvoice, ...prev]);
-      
+
       alert(`Parabéns! Sua assinatura foi atualizada com sucesso para a categoria ${tier}!`);
     }, 1500);
   };
@@ -138,7 +138,7 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
 
   return (
     <div className="max-w-4xl mx-auto pb-20 animate-fade-in relative">
-      
+
       {/* Background radial glow */}
       <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
 
@@ -150,71 +150,65 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
 
       {/* Horizontal Mobile Navigation Tabs Selector */}
       <div className="lg:hidden flex border-b border-white/5 mb-6 overflow-x-auto gap-2 pb-2 scrollbar-none">
-        <button 
+        <button
           onClick={() => setSearchParams({ tab: 'general' })}
-          className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold whitespace-nowrap transition-all uppercase tracking-wide border ${
-            activeTab === 'general' 
-              ? 'bg-primary/10 border-primary text-primary' 
+          className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold whitespace-nowrap transition-all uppercase tracking-wide border ${activeTab === 'general'
+              ? 'bg-primary/10 border-primary text-primary'
               : 'border-white/5 text-on-surface-variant hover:text-white hover:bg-white/5'
-          }`}
+            }`}
         >
           Geral & Perfil
         </button>
-        <button 
+        <button
           onClick={() => setSearchParams({ tab: 'security' })}
-          className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold whitespace-nowrap transition-all uppercase tracking-wide border ${
-            activeTab === 'security' 
-              ? 'bg-primary/10 border-primary text-primary' 
+          className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold whitespace-nowrap transition-all uppercase tracking-wide border ${activeTab === 'security'
+              ? 'bg-primary/10 border-primary text-primary'
               : 'border-white/5 text-on-surface-variant hover:text-white hover:bg-white/5'
-          }`}
+            }`}
         >
           Segurança
         </button>
-        <button 
+        <button
           onClick={() => setSearchParams({ tab: 'plan' })}
-          className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold whitespace-nowrap transition-all uppercase tracking-wide border ${
-            activeTab === 'plan' 
-              ? 'bg-primary/10 border-primary text-primary' 
+          className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold whitespace-nowrap transition-all uppercase tracking-wide border ${activeTab === 'plan'
+              ? 'bg-primary/10 border-primary text-primary'
               : 'border-white/5 text-on-surface-variant hover:text-white hover:bg-white/5'
-          }`}
+            }`}
         >
           Valores & Plano
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
+
         {/* Left Side: Desktop navigation tabs column */}
         <div className="hidden lg:block lg:col-span-3">
           <div className="bg-[#191c1e] border border-white/5 rounded-2xl p-2 sticky top-24 space-y-1">
             <nav className="flex flex-col gap-1">
-              <button 
+              <button
                 onClick={() => setSearchParams({ tab: 'general' })}
-                className={`w-full text-left px-4 py-3 rounded-xl text-xs font-mono font-bold transition-all uppercase tracking-wide ${
-                  activeTab === 'general' 
-                    ? 'bg-primary/10 text-primary border-l-2 border-l-primary' 
+                className={`w-full text-left px-4 py-3 rounded-xl text-xs font-mono font-bold transition-all uppercase tracking-wide ${activeTab === 'general'
+                    ? 'bg-primary/10 text-primary border-l-2 border-l-primary'
                     : 'text-on-surface-variant hover:text-white hover:bg-white/5'
-                }`}
+                  }`}
               >
                 Geral & Perfil
               </button>
-              <button 
+              <button
                 onClick={() => setSearchParams({ tab: 'security' })}
-                className={`w-full text-left px-4 py-3 rounded-xl text-xs font-mono font-bold transition-all uppercase tracking-wide ${
-                  activeTab === 'security' 
-                    ? 'bg-primary/10 text-primary border-l-2 border-l-primary' 
+                className={`w-full text-left px-4 py-3 rounded-xl text-xs font-mono font-bold transition-all uppercase tracking-wide ${activeTab === 'security'
+                    ? 'bg-primary/10 text-primary border-l-2 border-l-primary'
                     : 'text-on-surface-variant hover:text-white hover:bg-white/5'
-                }`}
+                  }`}
               >
                 Segurança
               </button>
-              <button 
+              <button
                 onClick={() => setSearchParams({ tab: 'plan' })}
-                className={`w-full text-left px-4 py-3 rounded-xl text-xs font-mono font-extrabold transition-all uppercase tracking-wide flex items-center justify-between ${
-                  activeTab === 'plan' 
-                    ? 'bg-primary/10 text-primary border-l-2 border-l-primary' 
+                className={`w-full text-left px-4 py-3 rounded-xl text-xs font-mono font-extrabold transition-all uppercase tracking-wide flex items-center justify-between ${activeTab === 'plan'
+                    ? 'bg-primary/10 text-primary border-l-2 border-l-primary'
                     : 'text-[#baf2ff] hover:text-white hover:bg-white/5'
-                }`}
+                  }`}
               >
                 <span>Plano & Assinatura</span>
                 <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_#00e0ff]" />
@@ -225,31 +219,31 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
 
         {/* Right Side: Account Forms & Settings Content Panel */}
         <div className="lg:col-span-9 space-y-8">
-          
+
           {/* TAB 1: GENERAL & PROFILE */}
           {activeTab === 'general' && (
             <div className="space-y-8 animate-fade-in">
               {/* Section: Profile Form */}
               <section className="bg-[#1d2022] rounded-2xl border border-white/10 overflow-hidden shadow-lg">
                 <div className="p-5 border-b border-white/5 flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary text-xl select-none" style={{fontVariationSettings: "'FILL' 1"}}>person</span>
+                  <span className="material-symbols-outlined text-primary text-xl select-none" style={{ fontVariationSettings: "'FILL' 1" }}>person</span>
                   <h3 className="font-bold font-display text-white text-sm uppercase tracking-wider">Dados do seu Perfil</h3>
                 </div>
-                
+
                 <form onSubmit={handleProfileSubmit} className="p-6 space-y-5">
                   {/* Foto de Perfil Editor */}
                   <div className="flex flex-col gap-4 p-4 rounded-xl bg-[#101415]/40 border border-white/5 mb-2">
                     <span className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold">Foto de Perfil</span>
-                    
+
                     <div className="flex flex-col sm:flex-row items-center gap-6">
                       {/* Avatar preview */}
                       <div className="relative w-23 h-23 shrink-0">
                         <div className="absolute inset-0 bg-gradient-to-tr from-primary to-[#c0c1ff] rounded-full blur-sm opacity-40" />
                         <div className="relative w-full h-full rounded-full overflow-hidden border border-white/10 bg-surface-dim flex items-center justify-center">
                           {avatar ? (
-                            <img 
-                              src={avatar} 
-                              alt="Pré-visualização do perfil" 
+                            <img
+                              src={avatar}
+                              alt="Pré-visualização do perfil"
                               className="w-full h-full object-cover"
                             />
                           ) : (
@@ -268,11 +262,11 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                           <label className="bg-primary/10 hover:bg-primary/25 border border-primary/20 text-primary hover:text-white font-mono text-[10px] font-bold px-3 py-2 rounded-xl transition-all uppercase cursor-pointer flex items-center gap-1.5 select-none">
                             <span className="material-symbols-outlined text-xs select-none">upload</span>
                             Enviar Imagem
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              onChange={handleFileChange} 
-                              className="hidden" 
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleFileChange}
+                              className="hidden"
                             />
                           </label>
 
@@ -311,9 +305,8 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                               key={preset.name}
                               type="button"
                               onClick={() => setAvatar(preset.url)}
-                              className={`relative w-12 h-12 rounded-lg overflow-hidden border transition-all shrink-0 cursor-pointer ${
-                                isSelected ? 'border-primary ring-2 ring-primary/20 scale-105' : 'border-white/5 hover:border-white/20'
-                              }`}
+                              className={`relative w-12 h-12 rounded-lg overflow-hidden border transition-all shrink-0 cursor-pointer ${isSelected ? 'border-primary ring-2 ring-primary/20 scale-105' : 'border-white/5 hover:border-white/20'
+                                }`}
                               title={preset.name}
                             >
                               <img src={preset.url} alt={preset.name} className="w-full h-full object-cover" />
@@ -332,7 +325,7 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold">Pseudônimo Trader</label>
-                      <input 
+                      <input
                         type="text"
                         required
                         value={username}
@@ -340,10 +333,10 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                         className="bg-[#101415] border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-primary outline-none transition-all font-mono"
                       />
                     </div>
-                    
+
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold">Endereço de E-mail</label>
-                      <input 
+                      <input
                         type="email"
                         required
                         value={email}
@@ -355,7 +348,7 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold font-semibold">Minibiografia</label>
-                    <textarea 
+                    <textarea
                       value={bio}
                       rows={3}
                       onChange={(e) => setBio(e.target.value)}
@@ -365,7 +358,7 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                   </div>
 
                   <div className="flex justify-end pt-2">
-                    <button 
+                    <button
                       type="submit"
                       className="bg-primary-container text-black font-extrabold px-6 py-2.5 rounded-xl hover:scale-102 transition-all text-xs font-mono uppercase shadow-[0_0_15px_rgba(0,224,255,0.25)] cursor-pointer"
                       id="settings-save-profile-btn"
@@ -379,14 +372,14 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
               {/* Section: Preferred Customization */}
               <section className="bg-[#1d2022] rounded-2xl border border-white/10 overflow-hidden shadow-lg">
                 <div className="p-5 border-b border-white/5 flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary text-xl select-none" style={{fontVariationSettings: "'FILL' 1"}}>palette</span>
+                  <span className="material-symbols-outlined text-primary text-xl select-none" style={{ fontVariationSettings: "'FILL' 1" }}>palette</span>
                   <h3 className="font-bold font-display text-white text-sm uppercase tracking-wider">Aparência do Tema</h3>
                 </div>
-                
+
                 <div className="p-6 space-y-6">
                   <div>
                     <span className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold block mb-3">Preservar visual Aetheric</span>
-                    
+
                     <div className="grid grid-cols-3 gap-3">
                       {[
                         { id: 'dark', label: 'Dark Mode', icon: 'dark_mode' },
@@ -398,11 +391,10 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                           <button
                             key={t.id}
                             onClick={() => onUpdateSettings({ theme: t.id as any })}
-                            className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all cursor-pointer ${
-                              isSelected 
-                                ? 'border-primary bg-primary/5 text-primary shadow-[0_0_12px_rgba(0,224,255,0.1)]' 
+                            className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all cursor-pointer ${isSelected
+                                ? 'border-primary bg-primary/5 text-primary shadow-[0_0_12px_rgba(0,224,255,0.1)]'
                                 : 'border-white/5 bg-[#101415]/50 text-on-surface-variant hover:border-white/15'
-                            }`}
+                              }`}
                             type="button"
                           >
                             <span className="material-symbols-outlined text-xl">{t.icon}</span>
@@ -418,24 +410,22 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                   {/* Toggles switches for transactional updates */}
                   <div className="space-y-4">
                     <span className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold block mb-3">Notificações por E-mail</span>
-                    
+
                     {/* 1 */}
                     <div className="flex items-center justify-between py-2 border-b border-white/5">
                       <div className="max-w-[80%]">
                         <p className="text-xs font-bold text-white font-display">Alertas de Ativos</p>
                         <p className="text-[11px] text-[#bac9cd]/50 leading-relaxed">Alertar sobre novos lançamentos ou descontos de apresentações e slides.</p>
                       </div>
-                      <button 
+                      <button
                         onClick={toggleMarketing}
-                        className={`w-11 h-6 rounded-full relative transition-all duration-300 border cursor-pointer ${
-                          settings.marketingAlerts ? 'bg-primary/20 border-primary' : 'bg-white/5 border-white/15'
-                        }`}
+                        className={`w-11 h-6 rounded-full relative transition-all duration-300 border cursor-pointer ${settings.marketingAlerts ? 'bg-primary/20 border-primary' : 'bg-white/5 border-white/15'
+                          }`}
                         type="button"
                         title="Marketing toggle"
                       >
-                        <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all duration-300 ${
-                          settings.marketingAlerts ? 'right-0.5 bg-primary shadow-[0_0_8px_rgba(0,224,255,0.8)]' : 'left-0.5 bg-on-surface-variant'
-                        }`} />
+                        <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all duration-300 ${settings.marketingAlerts ? 'right-0.5 bg-primary shadow-[0_0_8px_rgba(0,224,255,0.8)]' : 'left-0.5 bg-on-surface-variant'
+                          }`} />
                       </button>
                     </div>
 
@@ -445,17 +435,15 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                         <p className="text-xs font-bold text-white font-display">Atualizações de Cobranças</p>
                         <p className="text-[11px] text-[#bac9cd]/50 leading-relaxed">Enviar faturas de aquisições e alertas de créditos Pix da carteira.</p>
                       </div>
-                      <button 
+                      <button
                         onClick={toggleTransactions}
-                        className={`w-11 h-6 rounded-full relative transition-all duration-300 border cursor-pointer ${
-                          settings.transactionsAlerts ? 'bg-primary/20 border-primary' : 'bg-white/5 border-white/15'
-                        }`}
+                        className={`w-11 h-6 rounded-full relative transition-all duration-300 border cursor-pointer ${settings.transactionsAlerts ? 'bg-primary/20 border-primary' : 'bg-white/5 border-white/15'
+                          }`}
                         type="button"
                         title="Transaction toggle"
                       >
-                        <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all duration-300 ${
-                          settings.transactionsAlerts ? 'right-0.5 bg-primary shadow-[0_0_8px_rgba(0,224,255,0.8)]' : 'left-0.5 bg-on-surface-variant'
-                        }`} />
+                        <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all duration-300 ${settings.transactionsAlerts ? 'right-0.5 bg-primary shadow-[0_0_8px_rgba(0,224,255,0.8)]' : 'left-0.5 bg-on-surface-variant'
+                          }`} />
                       </button>
                     </div>
                   </div>
@@ -467,19 +455,19 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
           {/* TAB 2: SECURITY & USER AUTHENTICATION OPTIONS */}
           {activeTab === 'security' && (
             <div className="space-y-8 animate-fade-in text-white">
-              
+
               {/* 1. Alterar Senha de Acesso */}
               <section className="bg-[#1d2022] rounded-2xl border border-white/10 overflow-hidden shadow-lg">
                 <div className="p-5 border-b border-white/5 flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary text-xl select-none" style={{fontVariationSettings: "'FILL' 1"}}>lock_reset</span>
+                  <span className="material-symbols-outlined text-primary text-xl select-none" style={{ fontVariationSettings: "'FILL' 1" }}>lock_reset</span>
                   <h3 className="font-bold font-display text-white text-sm uppercase tracking-wider">Alterar Senha de Segurança</h3>
                 </div>
-                
+
                 <form onSubmit={handlePasswordChange} className="p-6 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold">Senha Atual</label>
-                      <input 
+                      <input
                         type="password"
                         required
                         value={currentPassword}
@@ -488,10 +476,10 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                         className="bg-[#101415] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-primary outline-none transition-all font-mono"
                       />
                     </div>
-                    
+
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold">Nova Senha</label>
-                      <input 
+                      <input
                         type="password"
                         required
                         value={newPassword}
@@ -503,7 +491,7 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
 
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold">Confirmar Nova Senha</label>
-                      <input 
+                      <input
                         type="password"
                         required
                         value={confirmPassword}
@@ -515,7 +503,7 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                   </div>
 
                   <div className="flex justify-end pt-2">
-                    <button 
+                    <button
                       type="submit"
                       className="bg-primary/20 text-primary border border-primary/30 hover:bg-primary hover:text-black font-extrabold px-5 py-2 rounded-xl transition-all text-xs font-mono uppercase cursor-pointer"
                     >
@@ -529,7 +517,7 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
               <section className="bg-[#1d2022] rounded-2xl border border-white/10 overflow-hidden shadow-lg">
                 <div className="p-5 border-b border-white/5 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-primary text-xl select-none" style={{fontVariationSettings: "'FILL' 1"}}>shield_person</span>
+                    <span className="material-symbols-outlined text-primary text-xl select-none" style={{ fontVariationSettings: "'FILL' 1" }}>shield_person</span>
                     <h3 className="font-bold font-display text-white text-sm uppercase tracking-wider">PIN da Carteira (Autorizar Saques Pix)</h3>
                   </div>
                   <div className="flex items-center gap-2 bg-[#101415]/60 border border-white/10 rounded-xl px-3 py-1 text-xs">
@@ -546,14 +534,14 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                     </button>
                   </div>
                 </div>
-                
+
                 <div className="p-6 space-y-4">
                   <p className="text-[11px] text-[#bac9cd]/50 leading-relaxed font-mono">
                     O PIN de segurança funciona como uma barreira extra contra transferências não autorizadas. Toda transação de resgate de saldo acumulado nas vendas Speedesk Pix precisará do informe deste código numérico de 4 dígitos.
                   </p>
 
                   {!showPinInput ? (
-                    <button 
+                    <button
                       onClick={() => setShowPinInput(true)}
                       className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold px-4 py-2 rounded-xl transition-all text-xs font-mono uppercase cursor-pointer"
                     >
@@ -563,7 +551,7 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                     <form onSubmit={handleUpdateWalletPin} className="bg-[#101415]/50 border border-white/10 p-4 rounded-xl space-y-3 animate-fade-in max-w-sm">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold">Novo PIN (4 dígitos numéricos)</label>
-                        <input 
+                        <input
                           type="text"
                           maxLength={4}
                           required
@@ -573,15 +561,15 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                           className="bg-[#101415] border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:border-primary outline-none transition-all font-mono tracking-widest text-center text-lg w-32"
                         />
                       </div>
-                      
+
                       <div className="flex items-center gap-2 pt-1">
-                        <button 
+                        <button
                           type="submit"
                           className="bg-primary text-black font-extrabold px-4 py-1.5 rounded-lg text-xs font-mono uppercase cursor-pointer"
                         >
                           Salvar PIN
                         </button>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => { setShowPinInput(false); setTempPin(''); }}
                           className="text-[#bac9cd]/50 hover:text-white px-3 py-1.5 rounded-lg text-xs font-mono uppercase"
@@ -625,9 +613,9 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                               <span className="text-[9px] font-mono text-[#bac9cd]/40 tracking-wider block mt-1">IP: {session.ip} • {session.date}</span>
                             </div>
                           </div>
-                          
+
                           {!session.current && (
-                            <button 
+                            <button
                               onClick={() => handleTerminateSession(session.id)}
                               className="text-[9px] font-mono text-red-400 hover:text-red-300 font-bold border border-red-500/20 hover:border-red-500/50 hover:bg-red-500/5 px-3 py-1 rounded-lg uppercase cursor-pointer"
                             >
@@ -647,13 +635,13 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
           {/* TAB 3: SUBSCRIPTION & PLANS (O caminho de assinatura do plano solicitado!) */}
           {activeTab === 'plan' && (
             <div className="space-y-8 animate-fade-in">
-              
+
               {/* Premium Plan Banner Widget */}
               <section className="bg-gradient-to-br from-[#1b2b35] via-[#101415] to-[#121617] rounded-2xl border border-primary/20 p-6 shadow-2xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-6 pointer-events-none">
                   <span className="material-symbols-outlined text-7xl text-primary/10 select-none scale-110 group-hover:rotate-6 transition-transform duration-500">workspace_premium</span>
                 </div>
-                
+
                 <div className="relative">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="bg-primary/25 text-primary border border-primary/30 text-[9px] font-mono font-black uppercase px-2.5 py-0.5 rounded-full tracking-widest animate-pulse">
@@ -669,7 +657,7 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                     </span>
                   </h3>
                   <p className="text-xs text-on-surface-variant max-w-lg mt-1 pr-6">
-                    {currentTier === 'PRO' 
+                    {currentTier === 'PRO'
                       ? 'Você possui acesso completo com taxas de vendas reduzidas para 5%, selo de verificado e prioridade de suporte.'
                       : 'Você está no plano de testes gratuito. Desbloqueie todas as vantagens de taxas reduzidas para 5%, selo de verificado e prioridade de suporte no painel abaixo.'}
                   </p>
@@ -695,7 +683,7 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                         </span>
                       </div>
                       {currentTier === 'PRO' && (
-                        <button 
+                        <button
                           onClick={handleCancelSubscription}
                           className="text-[10px] font-mono text-red-400 font-semibold mt-2 text-left hover:underline block cursor-pointer bg-transparent border-none"
                         >
@@ -710,18 +698,17 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
               {/* TIER PLANS SELECTION COMPARISON GRID */}
               <section className="space-y-4">
                 <h4 className="text-xs font-bold font-display text-white uppercase tracking-widest">Selecione o plano ideal para suas atividades</h4>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Plan Option 1: BÁSICO (FREE) */}
-                  <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between h-72 relative ${
-                    currentTier === 'Básico' 
-                      ? 'bg-white/5 border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.05)]' 
+                  <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between h-72 relative ${currentTier === 'Básico'
+                      ? 'bg-white/5 border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.05)]'
                       : 'bg-[#191c1e]/40 border-white/5 hover:border-white/15'
-                  }`}>
+                    }`}>
                     {currentTier === 'Básico' && (
                       <span className="absolute -top-2.5 right-4 bg-white/10 text-white font-black font-mono text-[8px] uppercase tracking-wider px-2 py-0.5 rounded border border-white/20">Seu plano atual</span>
                     )}
-                    
+
                     <div>
                       <div className="flex items-center gap-1.5 text-white font-mono uppercase tracking-widest font-black text-sm mb-1.5">
                         <span className="material-symbols-outlined text-sm text-[#bac9cd]/60">cancel_schedule_send</span>
@@ -731,7 +718,7 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                         <span className="text-2xl font-black font-display text-white">Grátis</span>
                         <span className="text-[10px] font-mono text-on-surface-variant lowercase">/sempre</span>
                       </div>
-                      
+
                       <ul className="mt-4 space-y-2 text-[11px] text-[#bac9cd]/80 leading-snug">
                         <li className="flex items-center gap-1.5">
                           <span className="material-symbols-outlined text-xs text-red-400 font-bold">close</span>
@@ -751,22 +738,20 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                     <button
                       onClick={() => handleUpgradePlan('Básico')}
                       disabled={currentTier === 'Básico' || isProcessingUpgrade}
-                      className={`w-full py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                        currentTier === 'Básico'
+                      className={`w-full py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${currentTier === 'Básico'
                           ? 'border border-white/10 text-[#bac9cd]/60 bg-white/5 cursor-not-allowed'
                           : 'bg-white/10 text-white hover:bg-white/20 hover:scale-101 shadow-md'
-                      }`}
+                        }`}
                     >
                       {currentTier === 'Básico' ? 'Plano Ativo' : 'Mudar para Plano Básico'}
                     </button>
                   </div>
 
                   {/* Plan Option 2: PRO (R$ 29,90) */}
-                  <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between h-72 relative ${
-                    currentTier === 'PRO' 
-                      ? 'bg-primary/5 border-primary shadow-[0_0_15px_rgba(0,188,248,0.1)]' 
+                  <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between h-72 relative ${currentTier === 'PRO'
+                      ? 'bg-primary/5 border-primary shadow-[0_0_15px_rgba(0,188,248,0.1)]'
                       : 'bg-[#191c1e]/40 border-white/5 hover:border-white/15'
-                  }`}>
+                    }`}>
                     {currentTier === 'PRO' && (
                       <span className="absolute -top-2.5 right-4 bg-primary text-black font-black font-mono text-[8px] uppercase tracking-wider px-2 py-0.5 rounded border border-primary">Seu plano atual</span>
                     )}
@@ -800,13 +785,12 @@ export default function Settings({ profile, settings, onUpdateProfile, onUpdateS
                     <button
                       onClick={() => handleUpgradePlan('PRO')}
                       disabled={currentTier === 'PRO' || isProcessingUpgrade}
-                      className={`w-full py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                        currentTier === 'PRO'
+                      className={`w-full py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${currentTier === 'PRO'
                           ? 'border border-primary/20 text-primary bg-primary/10 cursor-not-allowed'
                           : isProcessingUpgrade
                             ? 'bg-[#101415] border border-white/5 text-on-surface-variant animate-pulse'
                             : 'bg-primary text-black hover:scale-101 hover:shadow-[0_0_12px_rgba(0,188,248,0.4)]'
-                      }`}
+                        }`}
                     >
                       {isProcessingUpgrade ? 'Processando Fundo...' : currentTier === 'Básico' ? 'Fazer Upgrade PRO (R$ 29,90)' : 'Plano Ativo'}
                     </button>
