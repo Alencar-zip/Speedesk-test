@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Product } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface PublishProps {
   products: Product[];
@@ -24,7 +25,7 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
   const [resolution, setResolution] = useState('1920x1080 (16:9)');
   const [size, setSize] = useState('12.5 MB');
   const [slidesCount, setSlidesCount] = useState('30');
-  
+
   // Custom cover images (cyberpunk placeholders the user can pick or upload URL)
   const imagePlaceholders = [
     "https://lh3.googleusercontent.com/aida-public/AB6AXuAuoEugjmSopUyUtAwG0-zss0p7RzRcvfHLOU0wx9imP7yj7Z57OHzUUq38ct7Nmrl2ZCcVFof79aVBjFpriVydBh_NFeGFnB5ilo7u85_SzuuHtKHczwZrfLGH6-4Feqimr7obtmqOCVrI8g2B7-lYcwvscuM0iDmnMqvjg5EMUsPDGr0c7PCPp0PxVUP7pa_LADIXbacjo1QE9GTx7a_S1oiKM9TjJMt_0WGL_RKkm5EgCDoNdPFEaRtLcz43Y7wTDBeU6ZFi6w",
@@ -98,58 +99,55 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
     setFeatures(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handlePublishSubmit = (e: React.FormEvent) => {
+  const handlePublishSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!uploadedZip) {
-      alert("Aviso: É obrigatório subir um arquivo ZIP contendo os layouts e arquivos do ativo para validação de segurança.");
+      alert("Aviso: É obrigatório subir um arquivo ZIP.");
       return;
     }
 
-    const priceNum = parseFloat(price) || 0;
-    const finalImg = customImgUrl.trim() || selectedImg;
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const zipFile = fileInput?.files?.[0];
+    if (!zipFile) return;
 
-    const newProduct: Product = {
-      id: Date.now(),
-      title: title || 'Ativo Sem Nome',
-      format: format,
-      price: priceNum,
-      category: category.toLowerCase(),
-      img: finalImg,
-      creator: username,
-      description: description || 'Sem descrição breve.',
-      longDescription: longDescription || 'Sem detalhes longos fornecidos.',
-      features: features.length > 0 ? features : ["Recurso padrão incluído"],
-      specs: {
-        resolution,
-        software,
-        size,
-        updates: 'Gratuitas Vitalícias',
-        slidesCount: format !== 'ZIP' ? slidesCount : undefined,
-        fileFormat: format === 'PPTX' ? '.pptx' : format === 'KEYNOTE' ? '.key' : format === 'FIGMA' ? '.fig' : '.zip'
-      },
-      rating: 5.0,
-      downloads: 0,
-      views: 12,
-      zipFileName: uploadedZip.name
-    };
+    setDragActive(true); // Usando para simular um loading visual no botão
 
-    // Analyze if the file or title contains malicious keys or if simulateMalware is toggled
-    const isFileThreat = uploadedZip ? (
-      uploadedZip.name.toLowerCase().includes('virus') || 
-      uploadedZip.name.toLowerCase().includes('malware') || 
-      uploadedZip.name.toLowerCase().includes('trojan') ||
-      title.toLowerCase().includes('virus') ||
-      title.toLowerCase().includes('malware') ||
-      title.toLowerCase().includes('trojan')
-    ) : false;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
 
-    const shouldSimulateThreat = !!simulateMalware || isFileThreat;
+      // 1. Upload do Arquivo ZIP para o Storage
+      const zipName = `${Date.now()}-source-${zipFile.name}`;
+      const { error: zipError } = await supabase.storage
+        .from('assets')
+        .upload(zipName, zipFile);
 
-    // Add globally and kick off the API scan background process
-    onAddProduct(newProduct, shouldSimulateThreat);
+      if (zipError) throw zipError;
 
-    // Redirect user to the Creator Panel to track progress in real-time
-    navigate('/creator');
+      // 2. Salvar metadados na tabela 'products'
+      const { error: dbError } = await supabase.from('products').insert([{
+        title: title || 'Ativo Sem Nome',
+        price: parseFloat(price) || 0,
+        category: category.toLowerCase(),
+        img: customImgUrl.trim() || selectedImg,
+        format: format,
+        description: description,
+        file_path: zipName,
+        status: 'active', // Fica ativo na hora para o seu MVP
+        creator_id: user?.id
+      }]);
+
+      if (dbError) throw dbError;
+
+      alert("Ativo Real Publicado com Sucesso!");
+      navigate('/'); // Volta para a loja onde o produto novo já aparecerá
+
+    } catch (err: any) {
+      console.error(err);
+      alert("Erro ao publicar: " + err.message);
+    } finally {
+      setDragActive(false);
+    }
+
   };
 
   return (
@@ -169,7 +167,7 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
       {/* SUBMISSION FORM */}
       <form onSubmit={handlePublishSubmit} className="bg-[#1d2022] border border-white/10 rounded-2xl p-6 md:p-8 space-y-6 shadow-xl relative">
         <div className="flex items-center gap-3 border-b border-white/5 pb-4">
-          <span className="material-symbols-outlined text-primary text-xl select-none" style={{fontVariationSettings: "'FILL' 1"}}>cloud_upload</span>
+          <span className="material-symbols-outlined text-primary text-xl select-none" style={{ fontVariationSettings: "'FILL' 1" }}>cloud_upload</span>
           <h2 className="font-bold text-white uppercase tracking-wider font-display text-xs">Especificações Técnicas e Metadados</h2>
         </div>
 
@@ -177,8 +175,8 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
           <div className="md:col-span-8 flex flex-col gap-1.5">
             <label className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold">Título do Lançamento</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               required
               placeholder="Ex: Cyberpunk Keynote Deck"
               value={title}
@@ -189,8 +187,8 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
 
           <div className="md:col-span-4 flex flex-col gap-1.5">
             <label className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold">Preço Comercial (R$)</label>
-            <input 
-              type="number" 
+            <input
+              type="number"
               required
               min="0"
               max="50000"
@@ -233,8 +231,8 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold">Software Compatível</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               required
               placeholder="Ex: PowerPoint / Blender 4.2"
               value={software}
@@ -247,8 +245,8 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
         {/* Description fields */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold">Descrição Curta (Vitrine)</label>
-          <input 
-            type="text" 
+          <input
+            type="text"
             required
             maxLength={120}
             placeholder="Ex e sumário simples que aparece na vitrine do Marketplace."
@@ -260,7 +258,7 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
 
         <div className="flex flex-col gap-1.5">
           <label className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold">Descrição Completa</label>
-          <textarea 
+          <textarea
             rows={4}
             required
             placeholder="Forneça os diferenciais técnicos do layout, esquemas de cores e organização das seções."
@@ -274,7 +272,7 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-4 rounded-xl border border-white/5 bg-[#101415]/30">
           <div className="flex flex-col gap-1.5">
             <label className="text-[9px] font-mono text-on-surface-variant uppercase font-bold">Resolução / Redimensionamento</label>
-            <input 
+            <input
               type="text"
               placeholder="Ex: 1920x1080 (16:9)"
               value={resolution}
@@ -284,7 +282,7 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-[9px] font-mono text-on-surface-variant uppercase font-bold">Quantidade de Telas / Slides</label>
-            <input 
+            <input
               type="text"
               placeholder="Ex: 35 slides"
               value={slidesCount}
@@ -299,7 +297,7 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
         <div className="space-y-3">
           <label className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-bold block">Recursos Principais do Ativo</label>
           <div className="flex gap-2">
-            <input 
+            <input
               type="text"
               placeholder="Ex: Inclui 50+ ícones vetoriais"
               value={featureInput}
@@ -319,14 +317,14 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
           {features.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
               {features.map((feat, index) => (
-                <span 
-                  key={index} 
+                <span
+                  key={index}
                   className="bg-white/5 border border-white/5 text-[10px] py-1 pl-3 pr-2 rounded-full inline-flex items-center gap-1.5 text-[#bac9cd] font-mono"
                 >
                   {feat}
-                  <button 
-                    type="button" 
-                    onClick={() => removeFeature(index)} 
+                  <button
+                    type="button"
+                    onClick={() => removeFeature(index)}
                     className="text-red-400 hover:text-red-300 font-bold ml-1"
                   >
                     ×
@@ -349,18 +347,17 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
                   setSelectedImg(img);
                   setCustomImgUrl('');
                 }}
-                className={`aspect-video rounded-lg overflow-hidden border-2 relative transition-all ${
-                  selectedImg === img && !customImgUrl ? 'border-primary shadow-[0_0_8px_rgba(0,224,255,0.4)] border-primary' : 'border-white/5 opacity-60 hover:opacity-100'
-                }`}
+                className={`aspect-video rounded-lg overflow-hidden border-2 relative transition-all ${selectedImg === img && !customImgUrl ? 'border-primary shadow-[0_0_8px_rgba(0,224,255,0.4)] border-primary' : 'border-white/5 opacity-60 hover:opacity-100'
+                  }`}
               >
                 <img src={img} alt="Placeholder" className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
-          
+
           <div className="flex flex-col gap-1 mt-2">
             <span className="text-[9px] font-mono text-on-surface-variant uppercase">Ou cole o link de uma imagem customizada</span>
-            <input 
+            <input
               type="url"
               placeholder="https://exemplo.com/sua_capa.png"
               value={customImgUrl}
@@ -382,13 +379,12 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
             onDragOver={handleDrag}
             onDragLeave={handleDrag}
             onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all bg-[#101415]/10 relative ${
-              dragActive 
-                ? 'border-primary bg-primary/5 text-primary' 
-                : uploadedZip 
-                  ? 'border-green-500/40 bg-green-500/5' 
+            className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all bg-[#101415]/10 relative ${dragActive
+                ? 'border-primary bg-primary/5 text-primary'
+                : uploadedZip
+                  ? 'border-green-500/40 bg-green-500/5'
                   : 'border-white/10 hover:border-white/20'
-            }`}
+              }`}
           >
             {uploadedZip ? (
               <div className="space-y-3">
@@ -412,14 +408,14 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
                 <span className="material-symbols-outlined text-4xl text-[#bac9cd]/30 mb-2 select-none">upload_file</span>
                 <h3 className="text-xs font-bold text-white leading-relaxed">Arraste seu arquivo .ZIP aqui</h3>
                 <p className="text-[10px] text-on-surface-variant mt-1 leading-relaxed">Formatos suportados: apenas pacotes compactados ZIP de até 500MB.</p>
-                
+
                 <label className="mt-4 inline-block bg-primary/10 hover:bg-primary/20 border border-primary/20 hover:text-white px-4 py-2 rounded-xl text-[10px] font-mono font-bold text-primary transition-all cursor-pointer uppercase">
                   Escolher arquivo
-                  <input 
-                    type="file" 
+                  <input
+                    type="file"
                     accept=".zip"
                     onChange={handleFileInput}
-                    className="hidden" 
+                    className="hidden"
                   />
                 </label>
               </div>
