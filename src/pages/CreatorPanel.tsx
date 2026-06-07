@@ -23,7 +23,7 @@ export default function CreatorPanel({ products, onUpdateProductStatus, onUpdate
   const approvedAssets = creatorProducts.filter(p => p.status === 'approved' || p.status === undefined).length;
   const analyzingAssets = creatorProducts.filter(p => p.status === 'analyzing').length;
   const declinedAssets = creatorProducts.filter(p => p.status === 'declined').length;
-  
+
   const totalViews = creatorProducts.reduce((sum, p) => sum + p.views, 0);
   const totalDownloads = creatorProducts.reduce((sum, p) => sum + p.downloads, 0);
   // Estimate earnings assuming 10% premium comissão or direct sale
@@ -42,8 +42,8 @@ export default function CreatorPanel({ products, onUpdateProductStatus, onUpdate
     onUpdateProductStatus(productId, 'approved');
     if (onUpdateProductLogs) {
       onUpdateProductLogs(
-        productId, 
-        'approved', 
+        productId,
+        'approved',
         [
           { time: new Date().toLocaleTimeString('pt-BR'), message: "ADMIN_OVERRIDE: Auditoria de segurança forçada por administrador titular.", type: 'warning' },
           { time: new Date().toLocaleTimeString('pt-BR'), message: "Sistema liberado para fins comerciais no Marketplace.", type: 'success' }
@@ -67,7 +67,7 @@ export default function CreatorPanel({ products, onUpdateProductStatus, onUpdate
             Gerencie seus ativos homologados, visualize relatórios de antivírus integrados e acompanhe estatísticas de downloads e lucros.
           </p>
         </div>
-        <Link 
+        <Link
           to="/publish"
           className="bg-primary hover:bg-[#3bf1ff] hover:scale-102 text-black font-black text-xs px-5 py-3 rounded-xl tracking-wider font-mono flex items-center justify-center gap-2 self-start md:self-center uppercase transition-all shadow-[0_4px_15px_rgba(0,224,255,0.25)] cursor-pointer"
         >
@@ -151,10 +151,10 @@ export default function CreatorPanel({ products, onUpdateProductStatus, onUpdate
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
+
           {/* LEFT LIST: ALL REGISTERED PRODUCTS & MONITORING BADGES */}
           <div className="lg:col-span-6 space-y-4">
-            
+
             {/* Filter and searching tool header */}
             <div className="bg-[#16191b] border border-white/10 p-4 rounded-xl flex items-center justify-between gap-4">
               <span className="text-[9px] font-mono uppercase text-[#bac9cd] font-bold">Filtrar Ativos</span>
@@ -163,11 +163,10 @@ export default function CreatorPanel({ products, onUpdateProductStatus, onUpdate
                   <button
                     key={status}
                     onClick={() => setFilterStatus(status)}
-                    className={`px-3 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase transition-all tracking-wider ${
-                      filterStatus === status 
-                        ? 'bg-primary/20 text-primary border border-primary/20 shadow-xs' 
-                        : 'text-on-surface-variant hover:text-white bg-transparent border border-transparent'
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase transition-all tracking-wider ${filterStatus === status
+                        ? 'bg-primary/20 text-primary border border-primary/20 shadow-xs'
+                        : 'text-[#bac9cd] hover:text-white bg-white/5 border border-white/10 hover:bg-white/10'
+                      }`}
                   >
                     {status === 'all' ? 'Ver Todos' : status === 'analyzing' ? 'Em análise' : status === 'approved' ? 'Aprovados' : 'Quarentena'}
                   </button>
@@ -179,8 +178,8 @@ export default function CreatorPanel({ products, onUpdateProductStatus, onUpdate
             <div className="space-y-3 max-h-[640px] overflow-y-auto pr-1">
               {filteredProducts.map((p) => {
                 const isSelected = selectedProductId === p.id || (selectedProductId === null && creatorProducts[0].id === p.id);
-                
-                const statusTheme = 
+
+                const statusTheme =
                   p.status === 'approved' || p.status === undefined
                     ? { bg: 'bg-green-500/10', text: 'text-green-400', border: 'border-green-500/20', icon: 'check_circle', label: 'Monitorado & Ativo' }
                     : p.status === 'declined'
@@ -191,11 +190,10 @@ export default function CreatorPanel({ products, onUpdateProductStatus, onUpdate
                   <div
                     key={p.id}
                     onClick={() => setSelectedProductId(p.id)}
-                    className={`bg-[#1d2022] rounded-2xl p-4 border transition-all cursor-pointer flex items-center justify-between gap-4 ${
-                      isSelected 
-                        ? 'border-primary/40 bg-[#1d2022] shadow-[0_4px_25px_rgba(0,186,255,0.05)]' 
+                    className={`bg-[#1d2022] rounded-2xl p-4 border transition-all cursor-pointer flex items-center justify-between gap-4 ${isSelected
+                        ? 'border-primary/40 bg-[#1d2022] shadow-[0_4px_25px_rgba(0,186,255,0.05)]'
                         : 'border-white/5 hover:border-white/10 hover:bg-[#1d2022]'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3.5 truncate min-w-0">
                       {/* Image Preview */}
@@ -243,12 +241,12 @@ export default function CreatorPanel({ products, onUpdateProductStatus, onUpdate
             </div>
           </div>
 
-          
+
           {/* RIGHT VIEW: EXPANDED MALWARE SCANNER LOGS & SPECS ANALYSIS REPORT */}
           <div className="lg:col-span-6 space-y-6">
             {selectedProduct ? (
               <div className="bg-[#1d2022] border border-white/10 rounded-2xl p-6 shadow-xl space-y-6 animate-fade-in">
-                
+
                 {/* Header detail of product */}
                 <div className="flex items-start gap-4 pb-4 border-b border-white/5 justify-between">
                   <div className="min-w-0">
@@ -274,9 +272,8 @@ export default function CreatorPanel({ products, onUpdateProductStatus, onUpdate
                 <div className="flex border-b border-white/5 gap-2">
                   <button
                     onClick={() => setActiveTab('security')}
-                    className={`pb-2.5 px-3 text-xs font-mono font-bold uppercase tracking-wider relative ${
-                      activeTab === 'security' ? 'text-primary' : 'text-on-surface-variant hover:text-white'
-                    }`}
+                    className={`pb-2.5 px-3 text-xs font-mono font-bold uppercase tracking-wider relative ${activeTab === 'security' ? 'text-primary' : 'text-on-surface-variant hover:text-white'
+                      }`}
                   >
                     Auditoria Antivírus IA
                     {activeTab === 'security' && (
@@ -285,9 +282,8 @@ export default function CreatorPanel({ products, onUpdateProductStatus, onUpdate
                   </button>
                   <button
                     onClick={() => setActiveTab('specs')}
-                    className={`pb-2.5 px-3 text-xs font-mono font-bold uppercase tracking-wider relative ${
-                      activeTab === 'specs' ? 'text-primary' : 'text-on-surface-variant hover:text-white'
-                    }`}
+                    className={`pb-2.5 px-3 text-xs font-mono font-bold uppercase tracking-wider relative ${activeTab === 'specs' ? 'text-primary' : 'text-on-surface-variant hover:text-white'
+                      }`}
                   >
                     Especificações do Ativo
                     {activeTab === 'specs' && (
@@ -299,7 +295,7 @@ export default function CreatorPanel({ products, onUpdateProductStatus, onUpdate
                 {/* TAB 1: SECURITY DETAILED REPORT */}
                 {activeTab === 'security' && (
                   <div className="space-y-4">
-                    
+
                     {/* Visual box of overall scan verdict */}
                     {selectedProduct.status === 'analyzing' ? (
                       <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 space-y-3">
@@ -343,8 +339,8 @@ export default function CreatorPanel({ products, onUpdateProductStatus, onUpdate
                               <span className="text-on-surface-variant/40 shrink-0">[{log.time}]</span>
                               <span className={
                                 log.type === 'success' ? 'text-green-400' :
-                                log.type === 'warning' ? 'text-yellow-400 font-bold' :
-                                log.type === 'error' ? 'text-red-400 font-bold' : 'text-[#bac9cd]/80'
+                                  log.type === 'warning' ? 'text-yellow-400 font-bold' :
+                                    log.type === 'error' ? 'text-red-400 font-bold' : 'text-[#bac9cd]/80'
                               }>
                                 {log.message}
                               </span>

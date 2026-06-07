@@ -12,6 +12,7 @@
     "@stripe/stripe-js": "^2.4.0",
     "@supabase/supabase-js": "^2.39.7",
     "axios": "^1.6.7",
+    "clamscan": "^2.4.0",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.18.2",
