@@ -14,73 +14,64 @@ import Publish from './pages/Publish';
 import CreatorPanel from './pages/CreatorPanel';
 import Support from './pages/Support';
 import AdminDashboard from './pages/AdminDashboard';
-import { mockProducts } from './data/mockData'; // Mantido apenas como fallback
-import { Product, Transaction, UserProfile, UserRole } from './types';
+import { mockProducts } from './data/mockData';
+import { Product, Transaction, UserProfile, UserRole, AppSettings } from './types';
 
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [balance, setBalance] = useState<number>(0);
-  const [products, setProducts] = useState<Product[]>([]); // Começa vazio para carregar do banco
+  const [products, setProducts] = useState<Product[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [libraryIds, setLibraryIds] = useState<number[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
   const [profile, setProfile] = useState<UserProfile>({
-    username: "...", email: "", bio: "", avatar: "", verified: false, memberSince: "", role: "Usuário" as UserRole
+    username: "Carregando...",
+    email: "",
+    bio: "Membro Speedesk",
+    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAgC4uQXopo7y3MwccZzzte0cJVY3c4i1Bq6BObMcuA_mP2K0EEb2utB_6F5w1qNJ7U6fp6qwd4EwLKE_kRLIwgh0gey7SEZe93Tg8DgwZxW4fMtnh1LClgZZ2cjciWIaKwXlU4M-4Yr8v3dZngtNqijVrz_lHZE8vJyVGVqtAHvB45NG270FvzQMWTjYTumWNygdX9h-da1wVaulBzv1kbfR1o_Nok0YzizEgcp1I66JwWyoQrG0p8GxaKC5X1QGe98a-96FHjuA",
+    verified: false,
+    memberSince: "2026",
+    role: "Usuário" as UserRole
   });
 
-  // --- 1. CARREGAR CATALOGO DE PRODUTOS REAIS ---
-  const fetchMarketplace = async () => {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('status', 'active');
-    
-    if (!error && data) {
-      setProducts(data as Product[]);
-    } else {
-      setProducts(mockProducts); // Se o banco estiver vazio, mostra os mockados para não ficar em branco
-    }
-  };
+  const [settings, setSettings] = useState<AppSettings>({
+    language: "pt-BR", theme: "dark", marketAlerts: true, transactionsAlerts: true, marketingAlerts: false, simulateMalware: false
+  });
 
-  // --- 2. BUSCAR DADOS DO USUÁRIO LOGADO ---
+  // --- BUSCA DE DADOS REAIS ---
   const fetchUserData = async (user: any) => {
-    // Busca Perfil
+    // 1. Perfil
     const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    
-    // Busca Saldo
+    // 2. Saldo
     const { data: walletData } = await supabase.from('wallet').select('*').eq('user_id', user.id).single();
-    
-    // Busca Transações (Histórico Real)
-    const { data: transData } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('buyer_id', user.id)
-      .order('created_at', { ascending: false });
+    // 3. Transações
+    const { data: transData } = await supabase.from('transactions').select('*').eq('buyer_id', user.id);
 
-    if (profileData) {
-      setProfile({
-        username: profileData.username,
-        email: user.email,
-        bio: profileData.bio,
-        avatar: profileData.avatar_url || "https://sua-imagem-padrao.png",
-        verified: true,
-        memberSince: new Date(profileData.created_at).getFullYear().toString(),
-        role: profileData.role as UserRole
-      });
-    }
+    setProfile({
+      username: profileData?.username || user.email.split('@')[0],
+      email: user.email || "",
+      bio: profileData?.bio || "Entusiasta de ativos digitais.",
+      avatar: profileData?.avatar_url || profile.avatar,
+      verified: profileData?.role === 'Admin',
+      memberSince: profileData?.created_at ? new Date(profileData.created_at).getFullYear().toString() : "2026",
+      role: (profileData?.role as UserRole) || "Usuário"
+    });
 
-    if (walletData) {
-      setBalance(Number(walletData.available_balance));
-    }
-
-    if (transData) {
-      setTransactions(transData as unknown as Transaction[]);
-    }
+    if (walletData) setBalance(Number(walletData.available_balance));
+    if (transData) setTransactions(transData as unknown as Transaction[]);
   };
 
-  // --- 3. INICIALIZAÇÃO E OBSERVAÇÃO DE AUTH ---
+  const fetchMarketplace = async () => {
+    const { data } = await supabase.from('products').select('*').eq('status', 'active');
+    if (data && data.length > 0) setProducts(data as Product[]);
+    else setProducts(mockProducts); // Fallback caso banco esteja vazio
+  };
+
   useEffect(() => {
-    fetchMarketplace(); // Carrega a loja independente de estar logado
+    fetchMarketplace();
 
     const initApp = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -98,7 +89,6 @@ export default function App() {
       } else {
         setIsLoggedIn(false);
         setBalance(0);
-        setTransactions([]);
       }
     });
 
@@ -106,23 +96,18 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // --- 4. LÓGICA FINANCEIRA (STRIPE) ---
   const handleStripeCheckout = async (productId: number) => {
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
       const { data: { session } } = await supabase.auth.getSession();
-      
       const response = await fetch(`${API_URL}/api/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: session?.user.id, productId })
       });
-      
       const data = await response.json();
       if (data.url) window.location.href = data.url;
-    } catch (e) {
-      alert("Motor financeiro offline!");
-    }
+    } catch (e) { alert("Ligue o servidor local (npx tsx server.ts)!"); }
   };
 
   if (loading) return null;
@@ -136,36 +121,23 @@ export default function App() {
           <Layout 
             balance={balance} 
             profile={profile} 
-            searchQuery="" 
-            onSearchChange={() => {}} 
+            searchQuery={searchQuery} 
+            onSearchChange={setSearchQuery} 
             onLogout={() => supabase.auth.signOut()} 
           />
         ) : <Navigate to="/login" />}>
           
-          <Route path="/" element={<Marketplace products={products} searchQuery="" onSearchChange={() => {}} favoriteIds={[]} onToggleFavorite={() => {}} />} />
-          <Route path="/product/:id" element={<ProductDetails products={products} libraryIds={libraryIds} favoriteIds={[]} onToggleFavorite={() => {}} />} />
-          
-          <Route path="/checkout/:id" element={
-            <Checkout 
-              products={products} 
-              balance={balance} 
-              onConfirmStripe={handleStripeCheckout}
-              onDeductBalance={(amt) => { setBalance(prev => prev - amt); return true; }}
-              onAddTransaction={(tx) => setTransactions(prev => [tx, ...prev])}
-              onAddToLibrary={(id) => setLibraryIds(prev => [...prev, id])}
-            />
-          } />
-
-          <Route path="/wallet" element={<Wallet balance={balance} transactions={transactions} onAddFunds={(a) => setBalance(b => b + a)} onWithdrawFunds={(a) => {setBalance(b => b - a); return true;}} onAddTransaction={(t) => setTransactions(prev => [t, ...prev])} />} />
-          
+          <Route path="/" element={<Marketplace products={products} searchQuery={searchQuery} onSearchChange={setSearchQuery} favoriteIds={favoriteIds} onToggleFavorite={(id) => setFavoriteIds(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />} />
+          <Route path="/product/:id" element={<ProductDetails products={products} libraryIds={libraryIds} favoriteIds={favoriteIds} onToggleFavorite={(id) => setFavoriteIds(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />} />
+          <Route path="/checkout/:id" element={<Checkout products={products} balance={balance} onConfirmStripe={handleStripeCheckout} onDeductBalance={(amt) => { setBalance(prev => prev - amt); return true; }} onAddTransaction={(tx) => setTransactions([tx, ...transactions])} onAddToLibrary={(id) => setLibraryIds([...libraryIds, id])} />} />
+          <Route path="/wallet" element={<Wallet balance={balance} transactions={transactions} onAddFunds={(a) => setBalance(b => b + a)} onWithdrawFunds={(a) => {setBalance(b => b - a); return true;}} onAddTransaction={(t) => setTransactions([t, ...transactions])} />} />
           <Route path="/library" element={<Library products={products} libraryIds={libraryIds}/>} />
           <Route path="/profile" element={<Profile profile={profile} balance={balance} libraryIds={libraryIds} products={products} onLogout={() => supabase.auth.signOut()} />} />
-          <Route path="/publish" element={<Publish products={products} onAddProduct={(p) => setProducts(prev => [p, ...prev])} onUpdateProductStatus={() => {}} username={profile.username} />} />
+          <Route path="/publish" element={<Publish products={products} onAddProduct={(p: any) => setProducts([p, ...products])} onUpdateProductStatus={() => {}} username={profile.username} />} />
           <Route path="/creator" element={<CreatorPanel products={products} onUpdateProductStatus={() => {}} onUpdateProductLogs={() => {}} username={profile.username} />} />
           <Route path="/support" element={<Support products={products} username={profile.username} userRole={profile.role} />} />
-          
           <Route path="/admin" element={profile.role === 'Admin' ? <AdminDashboard products={products} onSetProducts={setProducts} currentUsername={profile.username} /> : <Navigate to="/" />} />
-          <Route path="/settings" element={<Settings profile={profile} settings={{} as any} onUpdateProfile={(u) => setProfile({...profile, ...u})} onUpdateSettings={() => {}} />} />
+          <Route path="/settings" element={<Settings profile={profile} settings={settings} onUpdateProfile={(u) => setProfile({...profile, ...u})} onUpdateSettings={(s) => setSettings({...settings, ...s})} />} />
         </Route>
       </Routes>
     </BrowserRouter>
