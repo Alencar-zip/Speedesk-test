@@ -1,20 +1,53 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+◆ ----------------------------------------------------------- ◆
 
-# Run and deploy your AI Studio app
+# Speedesk
 
-This contains everything you need to run your app locally.
+### Sistema de Custódia e Marketplace de Ativos Digitais
 
-View your app in AI Studio: https://ai.studio/apps/0e36f3a5-f8f4-4e8f-8586-bef5f2803692
+Speedesk é uma plataforma bilateral de alta fidelidade voltada para a comercialização e custódia de ativos digitais técnicos, como slides, modelos 3D, templates de sites e códigos fonte. O sistema atua como um intermediário de confiança, garantindo a integridade dos arquivos e a segurança financeira de ambas as partes através de processos automatizados de auditoria e retenção.
 
-## Run Locally
+[Acesse a Demonstração](https://speedesk-test.vercel.app)
 
-**Prerequisites:**  Node.js
+---
 
+### Estado Atual: MVP Operacional
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+O Produto Mínimo Viável contempla os fluxos fundamentais de um sistema de informação distribuído e seguro:
+
++ **Autenticação de Segurança:** Gestão de identidades e níveis de acesso (RBAC) via Supabase Auth com perfis persistidos em PostgreSQL.
++ **Integração Financeira:** Checkout dinâmico integrado à API do Stripe para processamento de pagamentos e gestão de assinaturas em tempo real.
++ **Lógica de Escrow (Custódia):** Regra de negócio com quarentena de 7 dias para saldos de vendas e janela de disputa técnica de 48 horas para compradores.
++ **Logística de Ativos:** Armazenamento em Cloud Storage com entrega via Signed URLs, garantindo que o link de download seja temporário e de uso exclusivo.
+
+---
+
+### Stack Tecnológica
+
+| Camada | Tecnologia |
+| :--- | :--- |
+| Interface | React 18 + Vite |
+| Estilização | Tailwind CSS (Aetheric Flux) |
+| Motor Backend | Node.js + Express |
+| Banco de Dados | PostgreSQL (Supabase) |
+
+---
+
+### Planejamento de Atualizações (Roadmap)
+
+Como evolução do MVP, as seguintes implementações estão previstas para as próximas versões do sistema:
+
++ **Triagem ClamAV:** Integração de motor antivírus a nível de servidor para varredura automática de binários em cada upload realizado por criadores.
++ **Suporte em Tempo Real:** Implementação de canal de mediação via WebSockets para resolução instantânea de disputas e suporte técnico.
++ **Hardening de Segurança:** Adição de Autenticação Multifator (MFA) e criptografia de metadados sensíveis de transação.
++ **Versionamento Técnico:** Sistema de controle de versões para permitir que criadores subam atualizações de seus produtos para compradores antigos.
+
+---
+
+### Equipe de Desenvolvimento
+
++ **João Vitor Alencar**
++ **Matheus Ramos**
+
+---
+
+◆ ------------------- SPEEDESK SYSTEMS 2026 ------------------- ◆
