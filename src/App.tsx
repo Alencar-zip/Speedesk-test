@@ -57,7 +57,7 @@ export default function App() {
       avatar: profileData?.avatar_url || profile.avatar,
       verified: profileData?.role === 'Admin',
       memberSince: profileData?.created_at ? new Date(profileData.created_at).getFullYear().toString() : "2026",
-      role: (profileData?.role as UserRole) || "Usuário"
+      role: (profileData?.role as UserRole) || "User"
     });
 
     if (walletData) setBalance(Number(walletData.available_balance));
