@@ -34,7 +34,7 @@ export default function App() {
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAgC4uQXopo7y3MwccZzzte0cJVY3c4i1Bq6BObMcuA_mP2K0EEb2utB_6F5w1qNJ7U6fp6qwd4EwLKE_kRLIwgh0gey7SEZe93Tg8DgwZxW4fMtnh1LClgZZ2cjciWIaKwXlU4M-4Yr8v3dZngtNqijVrz_lHZE8vJyVGVqtAHvB45NG270FvzQMWTjYTumWNygdX9h-da1wVaulBzv1kbfR1o_Nok0YzizEgcp1I66JwWyoQrG0p8GxaKC5X1QGe98a-96FHjuA",
     verified: false,
     memberSince: "2026",
-    role: "Usuário" as UserRole
+    role: "User" as UserRole // PADRONIZADO
   });
 
   const [settings, setSettings] = useState<AppSettings>({
@@ -43,21 +43,18 @@ export default function App() {
 
   // --- BUSCA DE DADOS REAIS ---
   const fetchUserData = async (user: any) => {
-    // 1. Perfil
     const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    // 2. Saldo
     const { data: walletData } = await supabase.from('wallet').select('*').eq('user_id', user.id).single();
-    // 3. Transações
     const { data: transData } = await supabase.from('transactions').select('*').eq('buyer_id', user.id);
 
     setProfile({
       username: profileData?.username || user.email.split('@')[0],
       email: user.email || "",
       bio: profileData?.bio || "Entusiasta de ativos digitais.",
-      avatar: profileData?.avatar_url || profile.avatar,
+      avatar: profileData?.avatar_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuAgC4uQXopo7y3MwccZzzte0cJVY3c4i1Bq6BObMcuA_mP2K0EEb2utB_6F5w1qNJ7U6fp6qwd4EwLKE_kRLIwgh0gey7SEZe93Tg8DgwZxW4fMtnh1LClgZZ2cjciWIaKwXlU4M-4Yr8v3dZngtNqijVrz_lHZE8vJyVGVqtAHvB45NG270FvzQMWTjYTumWNygdX9h-da1wVaulBzv1kbfR1o_Nok0YzizEgcp1I66JwWyoQrG0p8GxaKC5X1QGe98a-96FHjuA",
       verified: profileData?.role === 'Admin',
       memberSince: profileData?.created_at ? new Date(profileData.created_at).getFullYear().toString() : "2026",
-      role: (profileData?.role as UserRole) || "User"
+      role: (profileData?.role as UserRole) || ("User" as UserRole) // PADRONIZADO
     });
 
     if (walletData) setBalance(Number(walletData.available_balance));
@@ -67,20 +64,17 @@ export default function App() {
   const fetchMarketplace = async () => {
     const { data } = await supabase.from('products').select('*').eq('status', 'active');
     if (data && data.length > 0) setProducts(data as Product[]);
-    else setProducts(mockProducts); // Fallback caso banco esteja vazio
+    else setProducts(mockProducts);
   };
 
   useEffect(() => {
     fetchMarketplace();
-
     const initApp = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await fetchUserData(session.user);
-        setIsLoggedIn(true);
-      }
+      if (session) await fetchUserData(session.user);
       setLoading(false);
     };
+    initApp();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
@@ -91,8 +85,6 @@ export default function App() {
         setBalance(0);
       }
     });
-
-    initApp();
     return () => subscription.unsubscribe();
   }, []);
 
@@ -107,7 +99,7 @@ export default function App() {
       });
       const data = await response.json();
       if (data.url) window.location.href = data.url;
-    } catch (e) { alert("Ligue o servidor local (npx tsx server.ts)!"); }
+    } catch (e) { alert("Erro ao conectar com o servidor."); }
   };
 
   if (loading) return null;
@@ -139,6 +131,7 @@ export default function App() {
           <Route path="/admin" element={profile.role === 'Admin' ? <AdminDashboard products={products} onSetProducts={setProducts} currentUsername={profile.username} /> : <Navigate to="/" />} />
           <Route path="/settings" element={<Settings profile={profile} settings={settings} onUpdateProfile={(u) => setProfile({...profile, ...u})} onUpdateSettings={(s) => setSettings({...settings, ...s})} />} />
         </Route>
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
   );
