@@ -97,13 +97,12 @@ export default function App() {
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return alert("Por favor, faça login.");
+      if (!session) return alert("Faça login primeiro!");
 
       const response = await fetch(`${API_URL}/api/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          priceId: 'price_1TeDXZQ3BpaRaOV8DsM4XODS',
           userId: session.user.id,
           productId: productId
         })
@@ -111,8 +110,9 @@ export default function App() {
 
       const data = await response.json();
       if (data.url) window.location.href = data.url;
-    } catch (err) {
-      alert("Erro: Motor financeiro offline (porta 4242).");
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao conectar com o servidor financeiro.");
     }
   };
 

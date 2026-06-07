@@ -122,8 +122,8 @@ app.post('/api/verify-asset', async (req: Request, res: Response) => {
 });
 
 // 4. Porta do Servidor (CONFIGURAÇÃO PARA RENDER)
-const PORT = process.env.PORT || 10000;
+const PORT = Number(process.env.PORT) || 10000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Motor Speedesk operando em: ${isProduction ? 'PRODUÇÃO' : 'DESENVOLVIMENTO'}`);
-    console.log(`📡 Porta: ${PORT} | Frontend: ${FRONTEND_URL}`);
+    console.log(`🚀 Motor Speedesk operando na porta ${PORT}`);
+    console.log(`📡 Frontend: ${FRONTEND_URL}`);
 });
