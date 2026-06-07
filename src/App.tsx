@@ -69,15 +69,24 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleAuth = (session: any) => {
+  const handleAuth = async (session: any) => {
     if (session) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
       setIsLoggedIn(true);
-      setProfile(prev => ({
-        ...prev,
+      setProfile({
+        username: profileData?.username || session.user.email.split('@')[0],
         email: session.user.email,
-        username: session.user.user_metadata?.username || session.user.email.split('@')[0],
-        role: (session.user.user_metadata?.role as any) || "Comprador"
-      }));
+        bio: profileData?.bio || 'Entusiasta de ativos digitais.',
+        avatar: profileData?.avatar_url || 'https://sua-imagem-padrao.png',
+        verified: true,
+        memberSince: 'Jun, 2026',
+        role: profileData?.role || 'Comprador'
+      });
     } else {
       setIsLoggedIn(false);
     }

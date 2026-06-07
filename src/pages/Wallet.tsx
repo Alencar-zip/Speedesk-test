@@ -317,8 +317,8 @@ export default function Wallet({ balance, transactions, onAddFunds, onWithdrawFu
                     type="button"
                     onClick={() => setDepositAmount(val)}
                     className={`p-2 rounded-lg font-mono text-xs border text-center transition-all cursor-pointer ${depositAmount === val
-                        ? 'border-primary bg-primary/10 text-primary font-bold'
-                        : 'border-white/5 bg-black/20 text-[#bac9cd]'
+                      ? 'border-primary bg-primary/10 text-primary font-bold'
+                      : 'border-white/5 bg-black/20 text-[#bac9cd]'
                       }`}
                   >
                     +R$ {val}
