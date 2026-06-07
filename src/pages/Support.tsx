@@ -4,7 +4,7 @@ import { SupportTicket, Product } from '../types';
 interface SupportProps {
   products: Product[];
   username: string;
-  userRole?: 'Admin' | 'Moderador' | 'Criador' | 'Comprador' | 'Suporte';
+  userRole?:  'Admin' | 'Moderador' | 'User' | 'Suporte';
 }
 
 export default function Support({ products, username, userRole }: SupportProps) {

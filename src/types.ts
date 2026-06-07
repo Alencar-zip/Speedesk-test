@@ -10,8 +10,8 @@ export interface ProductSpec {
 export interface Product {
   id: number;
   title: string;
-  format: string; // 'PPTX' | 'KEYNOTE' | 'FIGMA' | 'ZIP'
-  price: number; // Stored as a raw number to allow easy calculations!
+  format: string; 
+  price: number; 
   category: string;
   img: string;
   creator: string;
@@ -31,9 +31,9 @@ export interface Product {
 export interface Transaction {
   id: string;
   date: string;
-  type: string; // 'Depósito' | 'Compra' | 'Saque'
+  type: string; 
   source: string;
-  amount: number; // Negative for expense, positive for gain
+  amount: number; 
   status: 'success' | 'pending' | 'expense';
 }
 
@@ -44,7 +44,8 @@ export interface UserProfile {
   avatar: string;
   verified: boolean;
   memberSince: string;
-  role?: 'Admin' | 'Moderador' | 'Criador' | 'Comprador' | 'Suporte';
+  // CARGOS UNIFICADOS: Removido Comprador/Criador e adicionado Usuário
+  role?: 'Admin' | 'Moderador' | 'User' | 'Suporte'; 
 }
 
 export interface AppSettings {
