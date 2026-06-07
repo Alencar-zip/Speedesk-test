@@ -95,10 +95,11 @@ export default function App() {
   // --- LÓGICA FINANCEIRA ---
   const handleStripeCheckout = async (productId: number) => {
     try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return alert("Por favor, faça login.");
 
-      const response = await fetch('http://localhost:4242/api/checkout', {
+      const response = await fetch(`${API_URL}/api/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
