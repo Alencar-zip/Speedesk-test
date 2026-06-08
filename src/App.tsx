@@ -146,7 +146,10 @@ export default function App() {
           <Route path="/wallet" element={<Wallet balance={balance} transactions={transactions} onAddFunds={(a) => setBalance(b => b + a)} onWithdrawFunds={(a) => {setBalance(b => b - a); return true;}} onAddTransaction={(t) => setTransactions([t, ...transactions])} />} />
           <Route path="/library" element={<Library products={products} libraryIds={libraryIds}/>} />
           <Route path="/profile" element={<Profile profile={profile} balance={balance} libraryIds={libraryIds} products={products} onLogout={() => supabase.auth.signOut()} />} />
-          <Route path="/publish" element={<Publish products={products} onAddProduct={(p: any) => setProducts([p, ...products])} onUpdateProductStatus={() => {}} username={profile.username} />} />
+          <Route path="/publish" element={<Publish products={products} onAddProduct={(p: any) => {
+  const activeProduct = { ...p, status: 'active' };
+  setProducts(prev => [activeProduct, ...prev]);
+}} onUpdateProductStatus={() => {}} username={profile.username} />} />
           <Route path="/creator" element={<CreatorPanel products={products} onUpdateProductStatus={() => {}} onUpdateProductLogs={() => {}} username={profile.username} />} />
           <Route path="/support" element={<Support products={products} username={profile.username} userRole={profile.role} />} />
           <Route path="/admin" element={profile.role === 'Admin' ? <AdminDashboard products={products} onSetProducts={setProducts} currentUsername={profile.username} /> : <Navigate to="/" />} />
