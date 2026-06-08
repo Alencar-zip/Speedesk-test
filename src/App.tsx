@@ -62,10 +62,31 @@ export default function App() {
   };
 
   const fetchMarketplace = async () => {
-    const { data } = await supabase.from('products').select('*').eq('status', 'active');
-    if (data && data.length > 0) setProducts(data as Product[]);
-    else setProducts(mockProducts);
-  };
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*'); // Removemos o filtro de status temporariamente para teste
+
+    if (error) throw error;
+
+    if (data && data.length > 0) {
+      // Mapeia os dados do banco para o formato que o React entende
+      const formattedProducts = data.map(p => ({
+        ...p,
+        // Garante que preço seja número e specs existam para não quebrar o design
+        price: Number(p.price),
+        specs: p.specs || { resolution: 'N/A', software: 'N/A', size: 'N/A', updates: 'N/A' }
+      }));
+      setProducts(formattedProducts);
+    } else {
+      // Se o banco estiver vazio, mantém os mocks para a barra de pesquisa não sumir
+      setProducts(mockProducts);
+    }
+  } catch (err) {
+    console.error("Erro ao carregar marketplace:", err);
+    setProducts(mockProducts); // Fallback de segurança
+  }
+};
 
   useEffect(() => {
     fetchMarketplace();
