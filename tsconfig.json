@@ -17,10 +17,20 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": [
-        "./*"
+        "./src/*"
       ]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": [
+    "src",
+    "server.ts", // ADICIONADO: Pro VS Code parar de dar erro no arquivo
+    "clamscan.d.ts" // ADICIONADO: Pro TS ler o manual de tipos que criamos
+  ],
+  "exclude": [
+    "node_modules"
+    // Removido o server.ts daqui para o IDE conseguir validar, 
+    // mas o build do Vite continuará ignorando o que não for do front.
+  ]
 }

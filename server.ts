@@ -32,8 +32,8 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
         persistSession: false // Recomendado para servidores (backend)
     },
     global: {
-        fetch: (...args) => fetch(...args),
-    },
+  fetch: (url: any, options: any) => fetch(url, options),
+   },
     // Isso resolve o erro do WebSocket
     realtime: {
         params: {
