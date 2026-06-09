@@ -8,7 +8,7 @@ export interface ProductSpec {
 }
 
 export interface Product {
-  id: number;
+  id: number | string; // Pode ser UUID ou número, dependendo do banco
   title: string;
   format: string; 
   price: number; 

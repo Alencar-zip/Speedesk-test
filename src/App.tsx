@@ -56,11 +56,38 @@ export default function App() {
     if (transData) setTransactions(transData as unknown as Transaction[]);
   };
 
-  const fetchMarketplace = async () => {
-    const { data } = await supabase.from('products').select('*').eq('status', 'active');
-    if (data && data.length > 0) setProducts(data as Product[]);
-    else setProducts(mockProducts);
-  };
+ const fetchMarketplace = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*');
+
+    if (error) {
+      console.error("Erro Supabase:", error);
+      setProducts(mockProducts); // Se der erro, mostra os fakes
+      return;
+    }
+
+    if (data && data.length > 0) {
+      // MAPEAMENTO PARA NÃO DAR ERRO DE DESIGN
+      const realProducts = data.map(p => ({
+        ...p,
+        id: p.id, // O React aceita UUID como chave, sem problemas
+        price: Number(p.price) || 0,
+        // Garante que tenha imagem, se não tiver no banco, usa uma padrão
+        img: p.img || "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1000",
+        specs: p.specs || { resolution: '1920x1080', software: 'Multi', size: '10MB', updates: 'Sim' }
+      }));
+      
+      setProducts(realProducts); // AQUI: Ele joga os fakes fora e coloca os REAIS
+    } else {
+      console.log("Banco de dados vazio ou bloqueado pelo RLS.");
+      setProducts(mockProducts);
+    }
+  } catch (err) {
+    setProducts(mockProducts);
+  }
+};
 
   // --- O CORRETO: useEffect SEM RETORNO DE JSX (Resolve o erro 2345) ---
   useEffect(() => {
