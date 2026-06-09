@@ -8,7 +8,7 @@ export interface ProductSpec {
 }
 
 export interface Product {
-  id: number | string; // Pode ser UUID ou número, dependendo do banco
+  id: string | number; // Pode ser UUID ou número, dependendo do banco
   title: string;
   format: string; 
   price: number; 
@@ -29,7 +29,7 @@ export interface Product {
 }
 
 export interface Transaction {
-  id: string;
+  id: string | number; // Pode ser UUID ou número, dependendo do banco
   date: string;
   type: string; 
   source: string;

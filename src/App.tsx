@@ -23,7 +23,7 @@ export default function App() {
   const [balance, setBalance] = useState<number>(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [libraryIds, setLibraryIds] = useState<number[]>([]);
+  const [libraryIds, setLibraryIds] = useState<(number | string)[]>([]); // Aceita UUID
   const [searchQuery, setSearchQuery] = useState('');
 
   const [profile, setProfile] = useState<UserProfile>({
@@ -36,7 +36,6 @@ export default function App() {
     role: "User" as UserRole
   });
 
-  // Função para buscar dados do banco
   const fetchUserData = async (user: any) => {
     const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     const { data: walletData } = await supabase.from('wallet').select('*').eq('user_id', user.id).single();
@@ -56,40 +55,34 @@ export default function App() {
     if (transData) setTransactions(transData as unknown as Transaction[]);
   };
 
- const fetchMarketplace = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*');
+  const fetchMarketplace = async () => {
+    try {
+      const { data, error } = await supabase.from('products').select('*');
 
-    if (error) {
-      console.error("Erro Supabase:", error);
-      setProducts(mockProducts); // Se der erro, mostra os fakes
-      return;
-    }
+      if (error) {
+        console.error("Erro Supabase:", error);
+        setProducts(mockProducts);
+        return;
+      }
 
-    if (data && data.length > 0) {
-      // MAPEAMENTO PARA NÃO DAR ERRO DE DESIGN
-      const realProducts = data.map(p => ({
-        ...p,
-        id: p.id, // O React aceita UUID como chave, sem problemas
-        price: Number(p.price) || 0,
-        // Garante que tenha imagem, se não tiver no banco, usa uma padrão
-        img: p.img || "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1000",
-        specs: p.specs || { resolution: '1920x1080', software: 'Multi', size: '10MB', updates: 'Sim' }
-      }));
-      
-      setProducts(realProducts); // AQUI: Ele joga os fakes fora e coloca os REAIS
-    } else {
-      console.log("Banco de dados vazio ou bloqueado pelo RLS.");
+      if (data && data.length > 0) {
+        const realProducts = data.map(p => ({
+          ...p,
+          id: p.id, 
+          price: Number(p.price) || 0,
+          img: p.img || "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1000",
+          specs: p.specs || { resolution: '1920x1080', software: 'Multi', size: '10MB', updates: 'Sim' }
+        }));
+        // Mescla reais com fakes para o Marketplace não ficar vazio no início
+        setProducts([...realProducts, ...mockProducts] as Product[]);
+      } else {
+        setProducts(mockProducts);
+      }
+    } catch (err) {
       setProducts(mockProducts);
     }
-  } catch (err) {
-    setProducts(mockProducts);
-  }
-};
+  };
 
-  // --- O CORRETO: useEffect SEM RETORNO DE JSX (Resolve o erro 2345) ---
   useEffect(() => {
     fetchMarketplace();
 
@@ -113,14 +106,10 @@ export default function App() {
     });
 
     checkSession();
-
-    // Retorna apenas a função de limpeza, nunca JSX ou null
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  const handleStripeCheckout = async (productId: number) => {
+  const handleStripeCheckout = async (productId: number | string) => {
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
       const { data: { session } } = await supabase.auth.getSession();
@@ -131,10 +120,11 @@ export default function App() {
       });
       const data = await response.json();
       if (data.url) window.location.href = data.url;
-    } catch (e) { alert("Ligue o motor financeiro!"); }
+    } catch (e) {
+      alert("Erro ao conectar com o servidor financeiro.");
+    }
   };
 
-  // O loading check deve ficar aqui embaixo, FORA do useEffect
   if (loading) return null;
 
   return (
@@ -142,24 +132,44 @@ export default function App() {
       <Routes>
         <Route path="/login" element={isLoggedIn ? <Navigate to="/" /> : <Login onLogin={() => setIsLoggedIn(true)} />} />
 
-        <Route element={isLoggedIn ? ( // MUDANÇA PARA A BARRA VOLTAR:
-<Layout
-  balance={balance}
-  profile={profile}
-  searchQuery={searchQuery} // Usa a variável que criamos no topo
-  onSearchChange={setSearchQuery} // Usa a função que atualiza a busca
-  onLogout={() => supabase.auth.signOut()}
-/>
-          
+        <Route element={isLoggedIn ? (
+          <Layout
+            balance={balance}
+            profile={profile}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onLogout={() => supabase.auth.signOut()}
+          />
         ) : <Navigate to="/login" />}>
 
-          <Route path="/" element={<Marketplace products={products} searchQuery="" onSearchChange={() => { }} favoriteIds={[]} onToggleFavorite={() => { }} />} />
-          <Route path="/product/:id" element={<ProductDetails products={products} libraryIds={libraryIds} favoriteIds={[]} onToggleFavorite={() => { }} />} />
-          <Route path="/checkout/:id" element={<Checkout products={products} balance={balance} onConfirmStripe={handleStripeCheckout} onDeductBalance={(amt) => { setBalance(prev => prev - amt); return true; }} onAddTransaction={(tx) => setTransactions([tx, ...transactions])} onAddToLibrary={(id) => setLibraryIds([...libraryIds, id])} />} />
+          {/* CORREÇÃO: Passando o searchQuery e a função real para o Marketplace */}
+          <Route path="/" element={
+            <Marketplace 
+              products={products} 
+              searchQuery={searchQuery} 
+              onSearchChange={setSearchQuery} 
+              favoriteIds={[]} 
+              onToggleFavorite={() => {}} 
+            />
+          } />
+          
+          <Route path="/product/:id" element={<ProductDetails products={products} libraryIds={libraryIds as any} favoriteIds={[]} onToggleFavorite={() => { }} />} />
+          
+          <Route path="/checkout/:id" element={
+            <Checkout 
+              products={products} 
+              balance={balance} 
+              onConfirmStripe={handleStripeCheckout as any} 
+              onDeductBalance={(amt) => { setBalance(prev => prev - amt); return true; }} 
+              onAddTransaction={(tx) => setTransactions([tx, ...transactions])} 
+              onAddToLibrary={(id) => setLibraryIds([...libraryIds, id])} 
+            />
+          } />
+
           <Route path="/wallet" element={<Wallet balance={balance} transactions={transactions} onAddFunds={(a) => setBalance(b => b + a)} onWithdrawFunds={(a) => { setBalance(b => b - a); return true; }} onAddTransaction={(t) => setTransactions([t, ...transactions])} />} />
-          <Route path="/library" element={<Library products={products} libraryIds={libraryIds} />} />
-          <Route path="/profile" element={<Profile profile={profile} balance={balance} libraryIds={libraryIds} products={products} onLogout={() => supabase.auth.signOut()} />} />
-          <Route path="/publish" element={<Publish products={products} onAddProduct={(p) => setProducts(prev => [p, ...prev])} onUpdateProductStatus={() => { }} username={profile.username} />} />
+          <Route path="/library" element={<Library products={products} libraryIds={libraryIds as any} />} />
+          <Route path="/profile" element={<Profile profile={profile} balance={balance} libraryIds={libraryIds as any} products={products} onLogout={() => supabase.auth.signOut()} />} />
+          <Route path="/publish" element={<Publish products={products} onAddProduct={() => fetchMarketplace()} onUpdateProductStatus={() => { }} username={profile.username} />} />
           <Route path="/creator" element={<CreatorPanel products={products} onUpdateProductStatus={() => { }} onUpdateProductLogs={() => { }} username={profile.username} />} />
           <Route path="/support" element={<Support products={products} username={profile.username} userRole={profile.role} />} />
           <Route path="/admin" element={profile.role === 'Admin' ? <AdminDashboard products={products} onSetProducts={setProducts} currentUsername={profile.username} /> : <Navigate to="/" />} />
