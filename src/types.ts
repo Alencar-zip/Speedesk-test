@@ -8,13 +8,14 @@ export interface ProductSpec {
 }
 
 export interface Product {
-  id: string | number; // Pode ser UUID ou número, dependendo do banco
+  id: number | string;
   title: string;
   format: string; 
   price: number; 
   category: string;
   img: string;
   creator: string;
+  creator_id?: string; // ADICIONADO: Para vincular ao ID do Supabase
   description: string;
   longDescription: string;
   features: string[];
@@ -22,7 +23,7 @@ export interface Product {
   rating: number;
   downloads: number;
   views: number;
-  status?: 'analyzing' | 'approved' | 'declined';
+  status?: 'analyzing' | 'approved' | 'declined' | 'active'; // ADICIONADO: 'active'
   zipFileName?: string;
   scanLogs?: Array<{ time: string; message: string; type: 'info' | 'success' | 'warning' | 'error' }>;
   scanSummary?: string;
