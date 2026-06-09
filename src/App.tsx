@@ -24,7 +24,8 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [libraryIds, setLibraryIds] = useState<number[]>([]);
-  
+  const [searchQuery, setSearchQuery] = useState('');
+
   const [profile, setProfile] = useState<UserProfile>({
     username: "Carregando...",
     email: "",
@@ -113,28 +114,29 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={isLoggedIn ? <Navigate to="/" /> : <Login onLogin={() => setIsLoggedIn(true)} />} />
-        
-        <Route element={isLoggedIn ? (
-          <Layout 
-            balance={balance} 
-            profile={profile} 
-            searchQuery="" 
-            onSearchChange={() => {}} 
-            onLogout={() => supabase.auth.signOut()} 
-          />
-        ) : <Navigate to="/login" />}>
+
+        <Route element={isLoggedIn ? ( // MUDANÇA PARA A BARRA VOLTAR:
+<Layout
+  balance={balance}
+  profile={profile}
+  searchQuery={searchQuery} // Usa a variável que criamos no topo
+  onSearchChange={setSearchQuery} // Usa a função que atualiza a busca
+  onLogout={() => supabase.auth.signOut()}
+/>
           
-          <Route path="/" element={<Marketplace products={products} searchQuery="" onSearchChange={() => {}} favoriteIds={[]} onToggleFavorite={() => {}} />} />
-          <Route path="/product/:id" element={<ProductDetails products={products} libraryIds={libraryIds} favoriteIds={[]} onToggleFavorite={() => {}} />} />
+        ) : <Navigate to="/login" />}>
+
+          <Route path="/" element={<Marketplace products={products} searchQuery="" onSearchChange={() => { }} favoriteIds={[]} onToggleFavorite={() => { }} />} />
+          <Route path="/product/:id" element={<ProductDetails products={products} libraryIds={libraryIds} favoriteIds={[]} onToggleFavorite={() => { }} />} />
           <Route path="/checkout/:id" element={<Checkout products={products} balance={balance} onConfirmStripe={handleStripeCheckout} onDeductBalance={(amt) => { setBalance(prev => prev - amt); return true; }} onAddTransaction={(tx) => setTransactions([tx, ...transactions])} onAddToLibrary={(id) => setLibraryIds([...libraryIds, id])} />} />
-          <Route path="/wallet" element={<Wallet balance={balance} transactions={transactions} onAddFunds={(a) => setBalance(b => b + a)} onWithdrawFunds={(a) => {setBalance(b => b - a); return true;}} onAddTransaction={(t) => setTransactions([t, ...transactions])} />} />
-          <Route path="/library" element={<Library products={products} libraryIds={libraryIds}/>} />
+          <Route path="/wallet" element={<Wallet balance={balance} transactions={transactions} onAddFunds={(a) => setBalance(b => b + a)} onWithdrawFunds={(a) => { setBalance(b => b - a); return true; }} onAddTransaction={(t) => setTransactions([t, ...transactions])} />} />
+          <Route path="/library" element={<Library products={products} libraryIds={libraryIds} />} />
           <Route path="/profile" element={<Profile profile={profile} balance={balance} libraryIds={libraryIds} products={products} onLogout={() => supabase.auth.signOut()} />} />
-          <Route path="/publish" element={<Publish products={products} onAddProduct={(p) => setProducts(prev => [p, ...prev])} onUpdateProductStatus={() => {}} username={profile.username} />} />
-          <Route path="/creator" element={<CreatorPanel products={products} onUpdateProductStatus={() => {}} onUpdateProductLogs={() => {}} username={profile.username} />} />
+          <Route path="/publish" element={<Publish products={products} onAddProduct={(p) => setProducts(prev => [p, ...prev])} onUpdateProductStatus={() => { }} username={profile.username} />} />
+          <Route path="/creator" element={<CreatorPanel products={products} onUpdateProductStatus={() => { }} onUpdateProductLogs={() => { }} username={profile.username} />} />
           <Route path="/support" element={<Support products={products} username={profile.username} userRole={profile.role} />} />
           <Route path="/admin" element={profile.role === 'Admin' ? <AdminDashboard products={products} onSetProducts={setProducts} currentUsername={profile.username} /> : <Navigate to="/" />} />
-          <Route path="/settings" element={<Settings profile={profile} settings={{} as any} onUpdateProfile={(u) => setProfile({...profile, ...u})} onUpdateSettings={() => {}} />} />
+          <Route path="/settings" element={<Settings profile={profile} settings={{} as any} onUpdateProfile={(u) => setProfile({ ...profile, ...u })} onUpdateSettings={() => { }} />} />
         </Route>
       </Routes>
     </BrowserRouter>

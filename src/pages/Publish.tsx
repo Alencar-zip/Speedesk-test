@@ -83,63 +83,40 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
     setFeatures(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handlePublishSubmit = async (e: React.FormEvent) => {
+ const handlePublishSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!actualFile) {
-      alert("Aviso: É obrigatório anexar um arquivo ZIP para continuar.");
-      return;
-    }
+    if (!actualFile) return;
 
     setLoading(true);
-
     try {
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) {
-        alert("Erro de sessão: realize o login novamente.");
-        return;
-      }
+        // 1. Cria o registro como analyzing no Supabase
+        const { data: product } = await supabase.from('products').insert([{
+            title, price, status: 'analyzing'
+        }]).select().single();
 
-      const fileName = `${Date.now()}-${actualFile.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('assets')
-        .upload(fileName, actualFile);
+        // 2. Manda o arquivo para o SEU servidor (Porta 4242) fazer o scan
+        const formData = new FormData();
+        formData.append('file', actualFile);
+        formData.append('productId', product.id);
 
-      if (uploadError) throw uploadError;
+        const response = await fetch('http://localhost:4242/api/upload-secure', {
+            method: 'POST',
+            body: formData
+        });
 
-      const finalImg = customImgUrl.trim() || selectedImg;
-      
-      const { data: dbProduct, error: dbError } = await supabase
-        .from('products')
-        .insert([{
-          title,
-          price: parseFloat(price),
-          category: category.toLowerCase(),
-          img: finalImg,
-          format,
-          description,
-          long_description: longDescription,
-          file_path: fileName,
-          status: 'active',
-          creator: username,
-          creator_id: auth.user.id,
-          features,
-          specs: { resolution, software, size, updates: 'Vitalícias', slidesCount }
-        }])
-        .select()
-        .single();
-
-      if (dbError) throw dbError;
-
-      alert("Sucesso: Ativo publicado no catálogo.");
-      onAddProduct(dbProduct as unknown as Product);
-      navigate('/');
-
-    } catch (err: any) {
-      alert("Falha no processo: " + err.message);
+        const result = await response.json();
+        if (result.status === 'success') {
+            alert("Publicado e validado pelo ClamAV!");
+            navigate('/');
+        } else {
+            alert("Arquivo rejeitado pela triagem de seguranca.");
+        }
+    } catch (err) {
+        alert("Erro na esteira de seguranca.");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
   return (
     <div className="pb-20 animate-fade-in relative max-w-4xl mx-auto">

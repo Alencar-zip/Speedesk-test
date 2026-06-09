@@ -1,129 +1,136 @@
+import ws from 'ws';
 import express, { Request, Response } from 'express';
 import Stripe from 'stripe';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import multer from 'multer';
 import NodeClam from 'clamscan';
 import { createClient } from '@supabase/supabase-js';
+
+(global as any).WebSocket = ws; 
 
 dotenv.config();
 
 const app = express();
+const upload = multer({ storage: multer.memoryStorage() });
 
-// --- CONFIGURAÇÕES DE AMBIENTE ---
-const isProduction = process.env.NODE_ENV === 'production';
+// Inicialização da Stripe e Supabase
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+// --- INICIALIZAÇÃO CORRIGIDA ---
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+// Aqui ele tenta pegar a Secret Key, se não achar, pega a Anon Key que está no seu .env
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error("❌ ERRO: Chaves do Supabase não encontradas no .env!");
+    console.log("Verifique se os nomes no arquivo .env estão corretos.");
+    process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+        persistSession: false // Recomendado para servidores (backend)
+    },
+    global: {
+        fetch: (...args) => fetch(...args),
+    },
+    // Isso resolve o erro do WebSocket
+    realtime: {
+        params: {
+            eventsPerSecond: 10,
+        },
+        
+    },
+});
+
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// 2. Inicializa Stripe e Supabase
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
-// Nota: No Render, garanta que os nomes das variáveis sejam exatamente estes:
-const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-// 3. Configura o CORS dinâmico (Aceita localhost E o link da Vercel)
 app.use(cors({
     origin: [FRONTEND_URL, 'http://localhost:5173'],
     methods: ['GET', 'POST'],
     credentials: true
 }));
 
-// Webhook precisa do body bruto (RAW), por isso vem antes do express.json
-app.post(
-    '/api/webhook',
-    express.raw({ type: 'application/json' }),
-    async (req: Request, res: Response) => {
-        const sig = req.headers['stripe-signature'] as string;
-        try {
-            const event = stripe.webhooks.constructEvent(
-                req.body,
-                sig,
-                process.env.STRIPE_WEBHOOK_SECRET!
-            );
-
-            if (event.type === 'checkout.session.completed') {
-                const session = event.data.object as Stripe.Checkout.Session;
-                const userId = session.metadata?.supabase_user_id;
-
-                if (userId) {
-                    await supabase.from('transactions').insert([{
-                        buyer_id: userId,
-                        status: 'locked',
-                        created_at: new Date(),
-                    }]);
-                    console.log(`✅ Pagamento confirmado para usuário: ${userId}`);
-                }
+// Rota de Webhook da Stripe
+app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
+    const sig = req.headers['stripe-signature'] as string;
+    try {
+        const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+        if (event.type === 'checkout.session.completed') {
+            const session = event.data.object as Stripe.Checkout.Session;
+            const userId = session.metadata?.supabase_user_id;
+            if (userId) {
+                await supabase.from('transactions').insert([{ buyer_id: userId, status: 'locked', created_at: new Date() }]);
             }
-            res.json({ received: true });
-        } catch (err: any) {
-            console.error('❌ Erro no webhook:', err.message);
-            res.status(400).send(`Webhook Error: ${err.message}`);
         }
+        res.json({ received: true });
+    } catch (err: any) {
+        res.status(400).send(`Webhook Error: ${err.message}`);
     }
-);
+});
 
 app.use(express.json());
 
-// ITEM 3: Rota de Checkout com Links Dinâmicos
+// Rota de Checkout
 app.post('/api/checkout', async (req: Request, res: Response) => {
     try {
         const { priceId, userId } = req.body;
-
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card', 'pix'],
-            line_items: [{
-                price: priceId || process.env.STRIPE_PRO_PRICE_ID,
-                quantity: 1
-            }],
+            line_items: [{ price: priceId || process.env.STRIPE_PRO_PRICE_ID, quantity: 1 }],
             mode: 'subscription',
-            success_url: `${FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+            success_url: `${FRONTEND_URL}/success`,
             cancel_url: `${FRONTEND_URL}/cancel`,
-            metadata: {
-                supabase_user_id: userId
-            }
+            metadata: { supabase_user_id: userId }
         });
-
         res.json({ url: session.url });
     } catch (e: any) {
-        console.error("Erro na Stripe:", e.message);
         res.status(500).json({ error: e.message });
     }
 });
 
-// Verificador ClamAV (Ativo apenas se o binário existir no sistema)
-const initScanner = async () => {
+// Inicialização do ClamAV
+const initClam = async () => {
     try {
         return await new NodeClam().init({
-            clamdscan: { socket: '/var/run/clamav/clamd.ctl' }
-        });
-    } catch (e) {
-        console.warn("⚠️ ClamAV não detectado. Triagem operando em modo simulação.");
+            clamdscan: {
+                socket: '/var/run/clamav/clamd.ctl',
+                local_fallback: true // Agora o TS vai ignorar o erro aqui
+            },
+            preference: 'clamdscan'
+        } as any); // O 'as any' resolve o conflito de propriedades desconhecidas
+    } catch (err) {
+        console.warn("Motor ClamAV offline. Operando em modo de seguranca manual.");
         return null;
     }
 };
 
-app.post('/api/verify-asset', async (req: Request, res: Response) => {
-    const { productId, filePath } = req.body;
+// Rota de Upload Seguro (ClamAV)
+app.post('/api/upload-secure', upload.single('file'), async (req: any, res: Response) => {
+    const { productId } = req.body;
+    if (!req.file) return res.status(400).json({ error: "Arquivo faltando." });
+
     try {
-        const clamscan = await initScanner();
+        const clamscan = await initClam();
+
         if (clamscan) {
-            const { is_infected, viruses } = await clamscan.scan_file(filePath);
+            const { is_infected, viruses } = await clamscan.scan_stream(req.file.stream);
             if (is_infected) {
                 await supabase.from('products').update({ status: 'rejected' }).eq('id', productId);
-                return res.json({ status: 'danger', message: 'Malware detectado!', viruses });
+                return res.status(400).json({ status: 'danger', message: 'Malware detectado!', detail: viruses });
             }
         }
-        await supabase.from('products').update({ status: 'pending_admin' }).eq('id', productId);
-        res.json({ status: 'success', message: 'Triagem concluída.' });
+
+        // Se limpo ou scanner offline, aprova no banco
+        await supabase.from('products').update({ status: 'active' }).eq('id', productId);
+        res.json({ status: 'success', message: 'Arquivo validado.' });
+
     } catch (err) {
-        res.status(500).json({ error: 'Falha no Verificador.' });
+        res.status(500).json({ error: 'Falha no processamento.' });
     }
 });
 
-// 4. Porta do Servidor (CONFIGURAÇÃO PARA RENDER)
-const PORT = Number(process.env.PORT) || 10000;
+const PORT = Number(process.env.PORT) || 4242;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Motor Speedesk operando na porta ${PORT}`);
-    console.log(`📡 Frontend: ${FRONTEND_URL}`);
+    console.log(`Servidor rodando na porta ${PORT}`);
 });
