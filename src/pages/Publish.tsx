@@ -99,10 +99,12 @@ export default function Publish({ onAddProduct, username, simulateMalware }: Pub
         formData.append('file', actualFile);
         formData.append('productId', product.id);
 
-        const response = await fetch('http://localhost:4242/api/upload-secure', {
-            method: 'POST',
-            body: formData
-        });
+       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
+
+       const response = await fetch(`${API_URL}/api/upload-secure`, {
+         method: 'POST',
+         body: formData
+          });
 
         const result = await response.json();
         if (result.status === 'success') {

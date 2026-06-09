@@ -46,7 +46,10 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 app.use(cors({
-    origin: [FRONTEND_URL, 'http://localhost:5173'],
+    origin: [
+        'https://speedesk-test.vercel.app', // COLOQUE O SEU LINK DA VERCEL AQUI
+        'http://localhost:5173'
+    ],
     methods: ['GET', 'POST'],
     credentials: true
 }));
