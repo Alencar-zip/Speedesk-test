@@ -7,6 +7,7 @@ import multer from 'multer';
 import NodeClam from 'clamscan';
 import { createClient } from '@supabase/supabase-js';
 
+// Polyfill para suporte a WebSocket (necessário para o cliente Supabase em Node.js)
 (global as any).WebSocket = ws; 
 
 dotenv.config();
@@ -14,17 +15,18 @@ dotenv.config();
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
+// 1. INICIALIZAÇÃO SEGURA DAS VARIÁVEIS (Aceita os nomes do seu print no Render)
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-// Uso da Service Role Key no backend para garantir permissao de escrita no webhook
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-    console.error("Critical Error: Supabase credentials missing in environment.");
+    console.error("Critical Error: Supabase credentials (URL or KEY) missing in environment.");
     process.exit(1);
 }
 
+// Inicializa o Supabase com a Service Role Key (necessária para o Webhook ter permissão total)
 const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: { persistSession: false },
     global: {
@@ -34,12 +36,14 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
+// 2. CONFIGURAÇÃO DE CORS (Aceita o seu link oficial da Vercel)
 app.use(cors({
     origin: [FRONTEND_URL, 'https://speedesk-test.vercel.app', 'http://localhost:5173'],
     methods: ['GET', 'POST'],
     credentials: true
 }));
 
+// 3. WEBHOOK STRIPE (Processamento de compras em tempo real)
 app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
     const sig = req.headers['stripe-signature'] as string;
     let event;
@@ -56,13 +60,16 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req: 
         const productId = session.metadata?.product_id;
 
         if (userId && productId) {
-            await supabase.from('transactions').insert([{ 
+            // Registra a transação no banco de dados (A chave service_role garante a escrita)
+            const { error } = await supabase.from('transactions').insert([{ 
                 buyer_id: userId, 
                 product_id: productId,
-                status: 'locked', 
+                status: 'locked', // Valor entra em quarentena de 7 dias
                 created_at: new Date() 
             }]);
-            console.log(`Transaction logged: User ${userId} purchased Product ${productId}`);
+            
+            if (error) console.error("Database Insert Error:", error.message);
+            else console.log(`SUCCESS: User ${userId} purchased ${productId}`);
         }
     }
     res.json({ received: true });
@@ -71,25 +78,25 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req: 
 app.use(express.json());
 
 app.get('/', (req, res) => {
-    res.send('Speedesk API Node Operational');
+    res.send('🚀 Speedesk API Node Operational');
 });
 
-// server.ts
+// 4. ROTA DE CHECKOUT (Gera o link da Stripe)
 app.post('/api/checkout', async (req: Request, res: Response) => {
     try {
         const { priceId, userId, productId } = req.body;
         
         const session = await stripe.checkout.sessions.create({
-            // 'automatic_payment_methods' permite que a Stripe decida o que mostrar 
-            // com base no que esta ativo no seu painel (Settings > Payment Methods)
-            payment_method_types: ['card'], // Como o PIX esta bloqueado por 60 dias, mantemos apenas card aqui para evitar erros
+            // Como a conta é nova (menos de 60 dias), mantemos 'card'. 
+            // A Stripe ativará o PIX automaticamente após o período de carência.
+            payment_method_types: ['card'], 
             line_items: [{ 
                 price: priceId || process.env.STRIPE_PRO_PRICE_ID, 
                 quantity: 1 
             }],
-            mode: 'subscription', // Use 'payment' se o produto for compra unica
-            success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.FRONTEND_URL}/cancel`,
+            mode: 'subscription',
+            success_url: `${FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${FRONTEND_URL}/cancel`,
             metadata: { 
                 supabase_user_id: userId,
                 product_id: productId 
@@ -103,6 +110,7 @@ app.post('/api/checkout', async (req: Request, res: Response) => {
     }
 });
 
+// 5. SISTEMA DE SEGURANÇA (CLAMAV)
 const initClam = async () => {
     try {
         return await new NodeClam().init({
@@ -131,6 +139,7 @@ app.post('/api/upload-secure', upload.single('file'), async (req: any, res: Resp
                 return res.status(400).json({ status: 'infected', detail: viruses });
             }
         }
+        // Se limpo ou em simulação, ativa o produto no marketplace
         await supabase.from('products').update({ status: 'active' }).eq('id', productId);
         res.json({ status: 'success' });
     } catch (err: any) {
@@ -138,7 +147,9 @@ app.post('/api/upload-secure', upload.single('file'), async (req: any, res: Resp
     }
 });
 
-const PORT = Number(process.env.PORT) || 4242;
+// 6. PORTA DO SERVIDOR (Padronizada para Render)
+const PORT = Number(process.env.PORT) || 10000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server listening on port ${PORT}`);
+    console.log(`🚀 Motor Speedesk operando na porta ${PORT}`);
+    console.log(`📡 Frontend autorizado: ${FRONTEND_URL}`);
 });
