@@ -30,7 +30,7 @@ export interface Product {
 }
 
 export interface Transaction {
-  id: string | number; // Pode ser UUID ou número, dependendo do banco
+  id: string;
   date: string;
   type: string; 
   source: string;
