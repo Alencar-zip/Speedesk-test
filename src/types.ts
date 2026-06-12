@@ -8,7 +8,7 @@ export interface ProductSpec {
 }
 
 export interface Product {
-  id: number | string;
+  id: number;
   title: string;
   format: string; 
   price: number; 
