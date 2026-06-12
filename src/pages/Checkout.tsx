@@ -1,171 +1,99 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Product, Transaction } from '../types';
+import React, { useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { Product } from '../types';
 
-// 1. Interface atualizada para incluir a função da Stripe vinda do App.tsx
 interface CheckoutProps {
   products: Product[];
   balance: number;
-  onDeductBalance: (amount: number) => boolean;
-  onAddTransaction: (transaction: Transaction) => void;
-  onAddToLibrary: (productId: number) => void;
-  onConfirmStripe: (productId: number) => Promise<void>; // Nova prop
+  onConfirmStripe: (productId: number | string) => Promise<void>;
 }
 
-export default function Checkout({ 
-  products, 
-  balance, 
-  onDeductBalance, 
-  onAddTransaction, 
-  onAddToLibrary,
-  onConfirmStripe // Destruturação da nova prop
-}: CheckoutProps) {
+export default function Checkout({ products, balance, onConfirmStripe }: CheckoutProps) {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-
-  // Adicionado 'stripe' como opção de método de pagamento
-  const [paymentMethod, setPaymentMethod] = useState<'balance' | 'pix' | 'stripe'>('balance');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [simulatedCopied, setSimulatedCopied] = useState(false);
 
-  const productId = parseInt(id || '0', 10);
-  const product = products.find(p => p.id === productId);
+  const product = products.find(p => String(p.id) === String(id));
+  const isBalanceEnough = balance >= (product?.price || 0);
 
-  if (!product) {
-    return (
-      <div className="text-center py-20 animate-fade-in">
-        <span className="material-symbols-outlined text-5xl text-error mb-4">gavel</span>
-        <h2 className="text-xl font-bold text-white mb-2 font-display">Sem Ativo para Checkout</h2>
-        <p className="text-xs text-on-surface-variant mb-6">Não foi possível prosseguir.</p>
-        <Link to="/" className="bg-[#272a2c] px-6 py-2 rounded-xl text-xs font-mono text-white">Voltar</Link>
-      </div>
-    );
-  }
+  if (!product) return <div className="py-20 text-center text-on-surface-variant">Ativo nao encontrado.</div>;
 
-  const isBalanceEnough = balance >= product.price;
-
-  useEffect(() => {
-    if (!isBalanceEnough) {
-      setPaymentMethod('stripe'); // Se não tiver saldo, sugere Stripe (Cartão) por padrão
-    }
-  }, [isBalanceEnough]);
-
-  const handleProcessPayment = async () => {
-    // LÓGICA DO ITEM 3: Se for Stripe, chama a API real
-    if (paymentMethod === 'stripe') {
-      setLoading(true);
-      await onConfirmStripe(product.id);
-      setLoading(false);
-      return;
-    }
-
-    // Lógica de Simulação (Saldo ou PIX)
+  const handlePayment = async () => {
     setLoading(true);
-    setTimeout(() => {
-      let isSuccess = false;
-
-      if (paymentMethod === 'balance') {
-        const deducted = onDeductBalance(product.price);
-        if (deducted) isSuccess = true;
-        else { alert('Saldo insuficiente'); setLoading(false); return; }
-      } else {
-        isSuccess = true; // Simulação de PIX
-      }
-
-      if (isSuccess) {
-        const txId = `TX-${Math.floor(1000 + Math.random() * 9000)}`;
-        onAddTransaction({
-          id: txId,
-          date: new Date().toLocaleDateString('pt-BR'),
-          type: 'Compra',
-          source: `${product.title}`,
-          amount: -product.price,
-          status: 'expense'
-        });
-        onAddToLibrary(product.id);
-        setSuccess(true);
-      }
-      setLoading(false);
-    }, 1500);
+    // Se o usuario optar pelo fluxo externo ou nao tiver saldo
+    await onConfirmStripe(product.id);
+    setLoading(false);
   };
 
-  if (success) {
-    return (
-      <div className="max-w-md mx-auto bg-[#1d2022] border border-primary/20 rounded-3xl p-8 text-center my-8 animate-fade-in">
-        <span className="material-symbols-outlined text-primary text-5xl mb-6">check_circle</span>
-        <h2 className="text-2xl font-black text-white mb-2">Sucesso!</h2>
-        <p className="text-xs text-on-surface-variant mb-6">Ativo integrado à sua coleção.</p>
-        <button onClick={() => navigate('/library')} className="w-full bg-primary-container text-black font-bold py-3 rounded-xl text-xs font-mono">ACESSAR MINHA BIBLIOTECA</button>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-4xl mx-auto pb-20 animate-fade-in">
+    <div className="max-w-4xl mx-auto pb-20 animate-fade-in relative">
+      {/* Design Aetheric Flux Lights */}
+      <div className="absolute top-1/4 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+
       <header className="mb-10">
-        <h1 className="text-3xl font-bold text-white mb-2 tracking-tighter">Checkout de Ativo</h1>
-        <p className="text-xs text-on-surface-variant">Conclua sua compra de forma segura.</p>
+        <h1 className="text-3xl font-black text-white tracking-tighter mb-2">Finalizar Aquisicao</h1>
+        <p className="text-xs text-on-surface-variant uppercase font-mono tracking-widest">Seguranca garantida por Aetheric Flux & Stripe</p>
       </header>
 
-      {loading ? (
-        <div className="bg-[#191c1e] rounded-3xl p-16 text-center space-y-4 my-10">
-          <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin mx-auto" />
-          <h3 className="text-lg font-bold text-white">Processando...</h3>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-7 space-y-6">
-            <div className="bg-[#1d2022] border border-white/5 rounded-2xl p-6 space-y-4">
-              <h3 className="text-xs font-bold text-white uppercase tracking-widest">Método de Pagamento</h3>
-              
-              {/* Opção: Saldo */}
-              <button onClick={() => isBalanceEnough && setPaymentMethod('balance')} className={`w-full p-4 rounded-xl border text-left flex gap-4 ${paymentMethod === 'balance' ? 'border-primary bg-primary/5' : 'border-white/5 opacity-50'}`}>
-                <span className="material-symbols-outlined text-primary">account_balance_wallet</span>
-                <div>
-                  <div className="text-sm font-bold">Saldo Speedesk (R$ {balance.toFixed(2)})</div>
-                  <p className="text-[10px] text-on-surface-variant">Uso imediato do seu saldo interno.</p>
-                </div>
-              </button>
-
-              {/* Opção: Stripe (Cartão de Crédito) */}
-              <button onClick={() => setPaymentMethod('stripe')} className={`w-full p-4 rounded-xl border text-left flex gap-4 ${paymentMethod === 'stripe' ? 'border-primary bg-primary/5' : 'border-white/5'}`}>
-                <span className="material-symbols-outlined text-primary">payments</span>
-                <div>
-                  <div className="text-sm font-bold">Cartão de Crédito (Stripe)</div>
-                  <p className="text-[10px] text-on-surface-variant">Pagamento seguro processado via Stripe.</p>
-                </div>
-              </button>
-
-              {/* Opção: PIX */}
-              <button onClick={() => setPaymentMethod('pix')} className={`w-full p-4 rounded-xl border text-left flex gap-4 ${paymentMethod === 'pix' ? 'border-primary bg-primary/5' : 'border-white/5'}`}>
-                <span className="material-symbols-outlined text-primary">qr_code_2</span>
-                <div>
-                  <div className="text-sm font-bold">PIX Instantâneo</div>
-                  <p className="text-[10px] text-on-surface-variant">Liberação rápida via QR Code.</p>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <div className="lg:col-span-5">
-            <div className="bg-[#1d2022] border border-white/5 rounded-2xl p-6 space-y-6">
-              <h3 className="text-xs font-bold text-white uppercase tracking-widest">Resumo</h3>
-              <div className="flex justify-between font-bold text-lg border-t border-white/5 pt-4">
-                <span>Total</span>
-                <span className="text-primary">R$ {product.price.toLocaleString('pt-BR')}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Lado Esquerdo: Resumo do Produto */}
+        <div className="lg:col-span-7">
+          <div className="bg-[#1d2022] border border-white/10 rounded-3xl p-8 space-y-6 shadow-2xl">
+            <div className="flex gap-6">
+              <img src={product.img} alt="" className="w-32 h-24 rounded-2xl object-cover border border-white/5" />
+              <div>
+                <h3 className="text-xl font-bold text-white mb-1">{product.title}</h3>
+                <span className="text-[10px] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded uppercase">{product.format}</span>
+                <p className="text-xs text-on-surface-variant mt-3 line-clamp-2">{product.description}</p>
               </div>
-
-              <button 
-                onClick={handleProcessPayment} 
-                className="w-full bg-primary text-black font-black py-4 rounded-xl shadow-lg hover:scale-102 transition-all uppercase text-xs font-mono"
-              >
-                {paymentMethod === 'stripe' ? 'Pagar com Stripe' : 'Confirmar Compra'}
-              </button>
+            </div>
+            
+            <div className="pt-6 border-t border-white/5 space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-on-surface-variant">Licenca Comercial</span>
+                <span className="text-white">Inclusa</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-on-surface-variant">Suporte Tecnico</span>
+                <span className="text-white">Acesso Vitalicio</span>
+              </div>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Lado Direito: Acao de Pagamento */}
+        <div className="lg:col-span-5">
+          <div className="bg-[#1d2022] border border-primary/20 rounded-3xl p-8 space-y-6 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
+            
+            <div>
+              <p className="text-[10px] font-mono text-on-surface-variant uppercase mb-1">Total a pagar</p>
+              <div className="text-4xl font-black text-primary-container font-mono">
+                R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-4">
+              <button
+                onClick={handlePayment}
+                disabled={loading}
+                className="w-full py-5 bg-primary text-black font-black rounded-2xl shadow-[0_0_30px_rgba(0,224,255,0.3)] hover:scale-[1.02] active:scale-98 transition-all uppercase tracking-widest text-xs flex justify-center items-center gap-3"
+              >
+                <span className="material-symbols-outlined text-base">{loading ? 'sync' : 'lock'}</span>
+                {loading ? 'Redirecionando...' : 'Pagar com Stripe'}
+              </button>
+              
+              <p className="text-[9px] text-center text-on-surface-variant leading-relaxed px-4">
+                Ao clicar, voce sera levado para o ambiente seguro da Stripe para escolher entre Cartao de Credito ou outros metodos disponiveis.
+              </p>
+            </div>
+
+            <div className="pt-6 border-t border-white/5 flex items-center justify-center gap-2 opacity-50">
+              <span className="material-symbols-outlined text-sm">verified_user</span>
+              <span className="text-[10px] font-mono uppercase">PCI-DSS Compliant</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
