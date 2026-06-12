@@ -1,25 +1,35 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Product } from '../types';
+import { Product, Transaction } from '../types';
 
 interface CheckoutProps {
   products: Product[];
   balance: number;
+  onDeductBalance: (amount: number) => boolean;
+  onAddTransaction: (transaction: Transaction) => void;
+  onAddToLibrary: (productId: number | string) => void;
   onConfirmStripe: (productId: number | string) => Promise<void>;
 }
 
-export default function Checkout({ products, balance, onConfirmStripe }: CheckoutProps) {
+export default function Checkout({ 
+  products, 
+  balance, 
+  onDeductBalance, 
+  onAddTransaction, 
+  onAddToLibrary, 
+  onConfirmStripe 
+}: CheckoutProps) {
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(false);
 
+  // Comparação segura de IDs para UUID ou Number
   const product = products.find(p => String(p.id) === String(id));
-  const isBalanceEnough = balance >= (product?.price || 0);
 
   if (!product) return <div className="py-20 text-center text-on-surface-variant">Ativo nao encontrado.</div>;
 
   const handlePayment = async () => {
     setLoading(true);
-    // Se o usuario optar pelo fluxo externo ou nao tiver saldo
+    // Dispara o fluxo da Stripe real que configuramos no App.tsx
     await onConfirmStripe(product.id);
     setLoading(false);
   };
@@ -83,7 +93,7 @@ export default function Checkout({ products, balance, onConfirmStripe }: Checkou
               </button>
               
               <p className="text-[9px] text-center text-on-surface-variant leading-relaxed px-4">
-                Ao clicar, voce sera levado para o ambiente seguro da Stripe para escolher entre Cartao de Credito ou outros metodos disponiveis.
+                Ao clicar, voce sera levado para o ambiente seguro da Stripe para realizar o pagamento real.
               </p>
             </div>
 
