@@ -99,22 +99,55 @@ export default function App() {
   }, []);
 
   const handleStripeCheckout = async (productId: number | string) => {
-    try {
-      const product = products.find(p => String(p.id) === String(productId));
-      if (!product?.stripe_price_id) return alert("Este ativo nao possui link de pagamento.");
+  try {
+    const product = products.find(p => String(p.id) === String(productId));
+    if (!product) return;
 
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
-      const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return alert("Realize o login para continuar.");
 
-      const response = await fetch(`${API_URL}/api/checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: session?.user.id, priceId: product.stripe_price_id, productId: product.id })
-      });
-      const data = await response.json();
-      if (data.url) window.location.href = data.url;
-    } catch (e) { alert("Erro no servidor financeiro."); }
-  };
+    // --- LOGICA DE ITEM GRATIS (RESOLVE O ERRO DA MENSAGEM) ---
+    if (Number(product.price) === 0) {
+      const { error } = await supabase.from('transactions').insert([{ 
+          buyer_id: session.user.id, 
+          product_id: product.id,
+          status: 'success', 
+          created_at: new Date() 
+      }]);
+
+      if (error) throw error;
+      
+      alert("Ativo gratuito adicionado a sua colecao.");
+      window.location.href = '/library';
+      return;
+    }
+
+    // --- LOGICA DE ITEM PAGO (SÓ ENTRA AQUI SE PREÇO > 0) ---
+    if (!product.stripe_price_id) {
+      alert("Este ativo pago nao possui link de faturamento configurado.");
+      return;
+    }
+
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
+    const response = await fetch(`${API_URL}/api/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        userId: session.user.id, 
+        priceId: product.stripe_price_id, 
+        productId: product.id,
+        mode: 'payment'
+      })
+    });
+
+    const data = await response.json();
+    if (data.url) window.location.href = data.url;
+    
+  } catch (e) {
+    console.error(e);
+    alert("Falha na aquisicao do ativo.");
+  }
+};
 
   if (loading) return null;
 
