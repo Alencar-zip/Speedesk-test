@@ -1,6 +1,6 @@
 import { supabase } from './lib/supabase';
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Marketplace from './pages/Marketplace';
 import ProductDetails from './pages/ProductDetails';
@@ -18,6 +18,7 @@ import { mockProducts } from './data/mockData';
 import { Product, Transaction, UserProfile, UserRole } from './types';
 
 export default function App() {
+  const navigate = useNavigate(); // Hook de navegação interna
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [balance, setBalance] = useState<number>(0);
@@ -46,7 +47,7 @@ export default function App() {
       username: profileData?.username || user.email.split('@')[0],
       email: user.email || "",
       bio: profileData?.bio || "Membro Speedesk",
-      avatar: profileData?.avatar_url || "https://sua-imagem-padrao.png",
+      avatar: profileData?.avatar_url || profile.avatar,
       verified: profileData?.role === 'Admin',
       memberSince: "2026",
       role: (profileData?.role as UserRole) || ("User" as UserRole)
@@ -99,80 +100,89 @@ export default function App() {
   }, []);
 
   const handleStripeCheckout = async (productId: number | string) => {
-  try {
-    const product = products.find(p => String(p.id) === String(productId));
-    if (!product) return;
+    try {
+      const product = products.find(p => String(p.id) === String(productId));
+      if (!product) return;
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return alert("Realize o login para continuar.");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return alert("Realize o login para continuar.");
 
-    // --- LOGICA DE ITEM GRATIS (RESOLVE O ERRO DA MENSAGEM) ---
-    if (Number(product.price) === 0) {
-      const { error } = await supabase.from('transactions').insert([{ 
-          buyer_id: session.user.id, 
-          product_id: product.id,
-          status: 'success', 
-          created_at: new Date() 
-      }]);
+      // --- RESGATE GRATUITO COM NAVEGAÇÃO INTERNA (RESOLVE 404) ---
+      if (Number(product.price) === 0) {
+        const { error } = await supabase.from('transactions').insert([{ 
+            buyer_id: session.user.id, 
+            product_id: product.id,
+            status: 'success', 
+            created_at: new Date() 
+        }]);
 
-      if (error) throw error;
+        if (error) throw error;
+        
+        alert("Sucesso: Ativo gratuito adicionado à sua coleção.");
+        navigate('/library'); // Navega sem recarregar a página
+        return;
+      }
+
+      if (!product.stripe_price_id) {
+        alert("Este ativo pago não possui link de faturamento configurado.");
+        return;
+      }
+
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
+      const response = await fetch(`${API_URL}/api/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId: session.user.id, 
+          priceId: product.stripe_price_id, 
+          productId: product.id,
+          mode: 'payment'
+        })
+      });
+
+      const data = await response.json();
+      if (data.url) window.location.href = data.url;
       
-      alert("Ativo gratuito adicionado a sua colecao.");
-      window.location.href = '/library';
-      return;
+    } catch (e) {
+      console.error(e);
+      alert("Falha na aquisição do ativo.");
     }
+  };
 
-    // --- LOGICA DE ITEM PAGO (SÓ ENTRA AQUI SE PREÇO > 0) ---
-    if (!product.stripe_price_id) {
-      alert("Este ativo pago nao possui link de faturamento configurado.");
-      return;
-    }
-
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
-    const response = await fetch(`${API_URL}/api/checkout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        userId: session.user.id, 
-        priceId: product.stripe_price_id, 
-        productId: product.id,
-        mode: 'payment'
-      })
-    });
-
-    const data = await response.json();
-    if (data.url) window.location.href = data.url;
-    
-  } catch (e) {
-    console.error(e);
-    alert("Falha na aquisicao do ativo.");
-  }
-};
-
-  if (loading) return null;
+  if (loading) return <div className="bg-[#101415] min-h-screen flex items-center justify-center text-primary font-mono tracking-widest">NÚCLEO SPEEDESK...</div>;
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={isLoggedIn ? <Navigate to="/" /> : <Login onLogin={() => setIsLoggedIn(true)} />} />
-        
-        <Route element={isLoggedIn ? (
-          <Layout balance={balance} profile={profile} searchQuery={searchQuery} onSearchChange={setSearchQuery} onLogout={() => supabase.auth.signOut()} />
-        ) : <Navigate to="/login" />}>
-          
-          <Route path="/" element={<Marketplace products={products} searchQuery={searchQuery} onSearchChange={setSearchQuery} favoriteIds={favoriteIds as any} onToggleFavorite={(id) => setFavoriteIds(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />} />
-          <Route path="/product/:id" element={<ProductDetails products={products} libraryIds={libraryIds as any} favoriteIds={favoriteIds as any} onToggleFavorite={(id) => setFavoriteIds(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />} />
-          <Route path="/checkout/:id" element={<Checkout products={products} balance={balance} onConfirmStripe={handleStripeCheckout as any} onDeductBalance={(amt) => { setBalance(prev => prev - amt); return true; }} onAddTransaction={(tx) => setTransactions(prev => [tx, ...prev])} onAddToLibrary={(id) => setLibraryIds(prev => [...prev, id])} />} />
-          <Route path="/wallet" element={<Wallet balance={balance} transactions={transactions} onAddFunds={(a) => setBalance(prev => prev + a)} onWithdrawFunds={(amt) => { if (balance >= amt) { setBalance(prev => prev - amt); return true; } return false; }} onAddTransaction={(tx) => setTransactions(prev => [tx, ...prev])} />} />
-          <Route path="/library" element={<Library products={products} libraryIds={libraryIds as any} />} />
-          <Route path="/profile" element={<Profile profile={profile} balance={balance} libraryIds={libraryIds as any} products={products} onLogout={() => supabase.auth.signOut()} />} />
-          <Route path="/publish" element={<Publish products={products} onAddProduct={() => fetchMarketplace()} onUpdateProductStatus={() => {}} username={profile.username} />} />
-          <Route path="/creator" element={<CreatorPanel products={products} onUpdateProductStatus={() => {}} onUpdateProductLogs={() => {}} username={profile.username} />} />
-          <Route path="/support" element={<Support products={products} username={profile.username} userRole={profile.role} />} />
-          <Route path="/admin" element={profile.role === 'Admin' ? <AdminDashboard products={products} onSetProducts={setProducts} currentUsername={profile.username} /> : <Navigate to="/" />} />
-          <Route path="/settings" element={<Settings profile={profile} settings={{} as any} onUpdateProfile={(u) => setProfile({...profile, ...u})} onUpdateSettings={() => {}} />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route 
+        path="/login" 
+        element={isLoggedIn ? <Navigate to="/" replace /> : <Login onLogin={() => setIsLoggedIn(true)} />} 
+      />
+      
+      <Route 
+        element={isLoggedIn ? (
+          <Layout 
+            balance={balance} 
+            profile={profile} 
+            searchQuery={searchQuery} 
+            onSearchChange={setSearchQuery} 
+            onLogout={() => supabase.auth.signOut()} 
+          />
+        ) : <Navigate to="/login" replace />}
+      >
+        <Route path="/" element={<Marketplace products={products} searchQuery={searchQuery} onSearchChange={setSearchQuery} favoriteIds={favoriteIds as any} onToggleFavorite={(id) => setFavoriteIds(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />} />
+        <Route path="/product/:id" element={<ProductDetails products={products} libraryIds={libraryIds as any} favoriteIds={favoriteIds as any} onToggleFavorite={(id) => setFavoriteIds(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />} />
+        <Route path="/checkout/:id" element={<Checkout products={products} balance={balance} onConfirmStripe={handleStripeCheckout as any} onDeductBalance={(amt) => { setBalance(prev => prev - amt); return true; }} onAddTransaction={(tx) => setTransactions(prev => [tx, ...prev])} onAddToLibrary={(id) => setLibraryIds(prev => [...prev, id])} />} />
+        <Route path="/wallet" element={<Wallet balance={balance} transactions={transactions} onAddFunds={(a) => setBalance(prev => prev + a)} onWithdrawFunds={(amt) => { if (balance >= amt) { setBalance(prev => prev - amt); return true; } return false; }} onAddTransaction={(tx) => setTransactions(prev => [tx, ...prev])} />} />
+        <Route path="/library" element={<Library products={products} libraryIds={libraryIds as any} />} />
+        <Route path="/profile" element={<Profile profile={profile} balance={balance} libraryIds={libraryIds as any} products={products} onLogout={() => supabase.auth.signOut()} />} />
+        <Route path="/publish" element={<Publish products={products} onAddProduct={() => fetchMarketplace()} onUpdateProductStatus={() => {}} username={profile.username} />} />
+        <Route path="/creator" element={<CreatorPanel products={products} onUpdateProductStatus={() => {}} onUpdateProductLogs={() => {}} username={profile.username} />} />
+        <Route path="/support" element={<Support products={products} username={profile.username} userRole={profile.role} />} />
+        <Route path="/admin" element={profile.role === 'Admin' ? <AdminDashboard products={products} onSetProducts={setProducts} currentUsername={profile.username} /> : <Navigate to="/" replace />} />
+        <Route path="/settings" element={<Settings profile={profile} settings={{} as any} onUpdateProfile={(u) => setProfile({...profile, ...u})} onUpdateSettings={() => {}} />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
