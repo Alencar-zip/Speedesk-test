@@ -18,7 +18,7 @@ import { mockProducts } from './data/mockData';
 import { Product, Transaction, UserProfile, UserRole } from './types';
 
 export default function App() {
-  const navigate = useNavigate(); // Hook de navegação interna
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [balance, setBalance] = useState<number>(0);
@@ -54,7 +54,12 @@ export default function App() {
     });
 
     if (walletData) setBalance(Number(walletData.available_balance));
-    if (transData) setTransactions(transData as unknown as Transaction[]);
+    
+    if (transData) {
+      setTransactions(transData as unknown as Transaction[]);
+      const purchasedIds = transData.map((t: any) => t.product_id);
+      setLibraryIds(purchasedIds);
+    }
   };
 
   const fetchMarketplace = async () => {
@@ -92,6 +97,8 @@ export default function App() {
       } else {
         setIsLoggedIn(false);
         setBalance(0);
+        setLibraryIds([]);
+        setTransactions([]);
       }
     });
 
@@ -107,7 +114,6 @@ export default function App() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return alert("Realize o login para continuar.");
 
-      // --- RESGATE GRATUITO COM NAVEGAÇÃO INTERNA (RESOLVE 404) ---
       if (Number(product.price) === 0) {
         const { error } = await supabase.from('transactions').insert([{ 
             buyer_id: session.user.id, 
@@ -117,14 +123,14 @@ export default function App() {
         }]);
 
         if (error) throw error;
-        
-        alert("Sucesso: Ativo gratuito adicionado à sua coleção.");
-        navigate('/library'); // Navega sem recarregar a página
+        setLibraryIds(prev => [...prev, product.id]);
+        alert("Sucesso: Ativo adicionado a sua coleção.");
+        navigate('/library');
         return;
       }
 
       if (!product.stripe_price_id) {
-        alert("Este ativo pago não possui link de faturamento configurado.");
+        alert("Este ativo pago nao possui link de faturamento.");
         return;
       }
 
@@ -142,14 +148,12 @@ export default function App() {
 
       const data = await response.json();
       if (data.url) window.location.href = data.url;
-      
     } catch (e) {
-      console.error(e);
-      alert("Falha na aquisição do ativo.");
+      alert("Falha na aquisição.");
     }
   };
 
-  if (loading) return <div className="bg-[#101415] min-h-screen flex items-center justify-center text-primary font-mono tracking-widest">NÚCLEO SPEEDESK...</div>;
+  if (loading) return null;
 
   return (
     <Routes>
@@ -171,8 +175,11 @@ export default function App() {
       >
         <Route path="/" element={<Marketplace products={products} searchQuery={searchQuery} onSearchChange={setSearchQuery} favoriteIds={favoriteIds as any} onToggleFavorite={(id) => setFavoriteIds(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />} />
         <Route path="/product/:id" element={<ProductDetails products={products} libraryIds={libraryIds as any} favoriteIds={favoriteIds as any} onToggleFavorite={(id) => setFavoriteIds(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />} />
+        
         <Route path="/checkout/:id" element={<Checkout products={products} balance={balance} onConfirmStripe={handleStripeCheckout as any} onDeductBalance={(amt) => { setBalance(prev => prev - amt); return true; }} onAddTransaction={(tx) => setTransactions(prev => [tx, ...prev])} onAddToLibrary={(id) => setLibraryIds(prev => [...prev, id])} />} />
+        
         <Route path="/wallet" element={<Wallet balance={balance} transactions={transactions} onAddFunds={(a) => setBalance(prev => prev + a)} onWithdrawFunds={(amt) => { if (balance >= amt) { setBalance(prev => prev - amt); return true; } return false; }} onAddTransaction={(tx) => setTransactions(prev => [tx, ...prev])} />} />
+        
         <Route path="/library" element={<Library products={products} libraryIds={libraryIds as any} />} />
         <Route path="/profile" element={<Profile profile={profile} balance={balance} libraryIds={libraryIds as any} products={products} onLogout={() => supabase.auth.signOut()} />} />
         <Route path="/publish" element={<Publish products={products} onAddProduct={() => fetchMarketplace()} onUpdateProductStatus={() => {}} username={profile.username} />} />
