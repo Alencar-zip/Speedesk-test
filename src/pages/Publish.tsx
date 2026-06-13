@@ -61,50 +61,48 @@ export default function Publish({ onAddProduct, username }: PublishProps) {
   // 5. SUBMISSÃO PARA O ECOSSISTEMA
   const handlePublishSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!actualFile) return alert("Por favor, anexe o arquivo ZIP do produto.");
+    if (!actualFile) return alert("Anexe o arquivo ZIP do produto.");
 
     setLoading(true);
     try {
       const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) return alert("Sessão expirada. Faça login novamente.");
+      const user = auth.user;
+      if (!user) return alert("Faca login novamente.");
 
+      // 1. Upload do arquivo para o Storage
       const fileName = `${Date.now()}-${actualFile.name}`;
-      const { error: storageError } = await supabase.storage
-        .from('assets')
-        .upload(fileName, actualFile);
-
+      const { error: storageError } = await supabase.storage.from('assets').upload(fileName, actualFile);
       if (storageError) throw storageError;
 
+      // 2. Chamada ao Servidor para criar na Stripe e no Banco
       const finalImg = customImgUrl.trim() || selectedImg;
-      
-      const { data: dbProduct, error: dbError } = await supabase
-        .from('products')
-        .insert([{
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
+
+      const response = await fetch(`${API_URL}/api/products/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           title,
-          price: parseFloat(price),
+          price,
+          description,
+          userId: user.id,
           category: category.toLowerCase(),
           img: finalImg,
           format,
-          description,
-          long_description: longDescription,
-          file_path: fileName,
-          status: 'active',
-          creator: username,
-          creator_id: auth.user.id,
           features,
-          specs: { resolution, software, size: (actualFile.size / 1024 / 1024).toFixed(1) + " MB", updates: 'Vitalícias', slidesCount }
-        }])
-        .select()
-        .single();
+          specs: { resolution, software, size: (actualFile.size / 1024 / 1024).toFixed(1) + " MB", updates: 'Vitalicias', slidesCount }
+        })
+      });
 
-      if (dbError) throw dbError;
+      if (!response.ok) throw new Error("Erro na integracao financeira.");
 
-      onAddProduct(dbProduct as unknown as Product);
-      alert("Publicação concluída com sucesso.");
+      const dbProduct = await response.json();
+      onAddProduct(dbProduct);
+      alert("Ativo publicado e integrado a Stripe com sucesso.");
       navigate('/creator');
 
     } catch (err: any) {
-      alert("Falha no processo: " + err.message);
+      alert("Falha na publicacao: " + err.message);
     } finally {
       setLoading(false);
     }

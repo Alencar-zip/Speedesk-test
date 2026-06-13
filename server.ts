@@ -149,6 +149,53 @@ app.post('/api/upload-secure', upload.single('file'), async (req: any, res: Resp
 
 // 6. PORTA DO SERVIDOR (Padronizada para Render)
 const PORT = Number(process.env.PORT) || 10000;
+
+// Rota para criar Produto na Stripe + Banco de Dados
+app.post('/api/products/publish', async (req: Request, res: Response) => {
+    try {
+        const { title, price, description, userId, category, img, format, features, specs } = req.body;
+
+        // 1. Criar o objeto Produto na Stripe
+        const stripeProduct = await stripe.products.create({
+            name: title,
+            description: description,
+            images: [img]
+        });
+
+        // 2. Criar o Preço na Stripe (converte R$ para centavos)
+        const stripePrice = await stripe.prices.create({
+            product: stripeProduct.id,
+            unit_amount: Math.round(Number(price) * 100),
+            currency: 'brl',
+        });
+
+        // 3. Salvar no Supabase com o ID gerado
+        const { data, error } = await supabase
+            .from('products')
+            .insert([{
+                title,
+                price: Number(price),
+                category,
+                img,
+                format,
+                description,
+                stripe_price_id: stripePrice.id, // ID vital para o checkout
+                status: 'active',
+                creator_id: userId,
+                features,
+                specs
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json(data);
+    } catch (e: any) {
+        console.error("Erro na Publicação:", e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Motor Speedesk operando na porta ${PORT}`);
     console.log(`📡 Frontend autorizado: ${FRONTEND_URL}`);

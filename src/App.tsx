@@ -60,18 +60,13 @@ export default function App() {
     try {
       const { data, error } = await supabase.from('products').select('*');
       if (error) throw error;
-
-      if (data && data.length > 0) {
-        const realProducts = data.map(p => ({
+      if (data) {
+        const formatted = data.map(p => ({
           ...p,
-          id: p.id, 
-          price: Number(p.price) || 0,
-          img: p.img || "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1000",
-          specs: p.specs || { resolution: '1920x1080', software: 'Multi', size: '10MB', updates: 'Sim' }
+          price: Number(p.price),
+          specs: p.specs || { resolution: '1920x1080', software: 'Multi', size: '1.2MB', updates: 'Sim' }
         }));
-        setProducts([...realProducts, ...mockProducts] as Product[]);
-      } else {
-        setProducts(mockProducts);
+        setProducts([...formatted, ...mockProducts] as Product[]);
       }
     } catch (err) {
       setProducts(mockProducts);
@@ -80,7 +75,7 @@ export default function App() {
 
   useEffect(() => {
     fetchMarketplace();
-    const checkSession = async () => {
+    const initApp = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         await fetchUserData(session.user);
@@ -99,22 +94,26 @@ export default function App() {
       }
     });
 
-    checkSession();
+    initApp();
     return () => subscription.unsubscribe();
   }, []);
 
   const handleStripeCheckout = async (productId: number | string) => {
     try {
+      const product = products.find(p => String(p.id) === String(productId));
+      if (!product?.stripe_price_id) return alert("Este ativo nao possui link de pagamento.");
+
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
       const { data: { session } } = await supabase.auth.getSession();
+
       const response = await fetch(`${API_URL}/api/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: session?.user.id, productId })
+        body: JSON.stringify({ userId: session?.user.id, priceId: product.stripe_price_id, productId: product.id })
       });
       const data = await response.json();
       if (data.url) window.location.href = data.url;
-    } catch (e) { alert("Ligue o motor financeiro!"); }
+    } catch (e) { alert("Erro no servidor financeiro."); }
   };
 
   if (loading) return null;
@@ -123,39 +122,22 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={isLoggedIn ? <Navigate to="/" /> : <Login onLogin={() => setIsLoggedIn(true)} />} />
-
+        
         <Route element={isLoggedIn ? (
-          <Layout
-            balance={balance}
-            profile={profile}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            onLogout={() => supabase.auth.signOut()}
-          />
+          <Layout balance={balance} profile={profile} searchQuery={searchQuery} onSearchChange={setSearchQuery} onLogout={() => supabase.auth.signOut()} />
         ) : <Navigate to="/login" />}>
-
-          {/* CORREÇÃO: Passando o searchQuery real para o Marketplace */}
-          <Route path="/" element={
-            <Marketplace 
-              products={products} 
-              searchQuery={searchQuery} 
-              onSearchChange={setSearchQuery} 
-              favoriteIds={favoriteIds as any} 
-              onToggleFavorite={(id) => setFavoriteIds(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} 
-            />
-          } />
           
+          <Route path="/" element={<Marketplace products={products} searchQuery={searchQuery} onSearchChange={setSearchQuery} favoriteIds={favoriteIds as any} onToggleFavorite={(id) => setFavoriteIds(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />} />
           <Route path="/product/:id" element={<ProductDetails products={products} libraryIds={libraryIds as any} favoriteIds={favoriteIds as any} onToggleFavorite={(id) => setFavoriteIds(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])} />} />
-          
-          <Route path="/checkout/:id" element={<Checkout products={products} balance={balance} onConfirmStripe={handleStripeCheckout as any} onDeductBalance={(amt) => { setBalance(prev => prev - amt); return true; }} onAddTransaction={(tx) => setTransactions([tx, ...transactions])} onAddToLibrary={(id) => setLibraryIds([...libraryIds, id])} />} />
-          <Route path="/wallet" element={<Wallet balance={balance} transactions={transactions} onAddFunds={(a) => setBalance(b => b + a)} onWithdrawFunds={(a) => { setBalance(b => b - a); return true; }} onAddTransaction={(t) => setTransactions([t, ...transactions])} />} />
+          <Route path="/checkout/:id" element={<Checkout products={products} balance={balance} onConfirmStripe={handleStripeCheckout as any} onDeductBalance={(amt) => { setBalance(prev => prev - amt); return true; }} onAddTransaction={(tx) => setTransactions(prev => [tx, ...prev])} onAddToLibrary={(id) => setLibraryIds(prev => [...prev, id])} />} />
+          <Route path="/wallet" element={<Wallet balance={balance} transactions={transactions} onAddFunds={(a) => setBalance(prev => prev + a)} onWithdrawFunds={(amt) => { if (balance >= amt) { setBalance(prev => prev - amt); return true; } return false; }} onAddTransaction={(tx) => setTransactions(prev => [tx, ...prev])} />} />
           <Route path="/library" element={<Library products={products} libraryIds={libraryIds as any} />} />
           <Route path="/profile" element={<Profile profile={profile} balance={balance} libraryIds={libraryIds as any} products={products} onLogout={() => supabase.auth.signOut()} />} />
-          <Route path="/publish" element={<Publish products={products} onAddProduct={() => fetchMarketplace()} onUpdateProductStatus={() => { }} username={profile.username} />} />
-          <Route path="/creator" element={<CreatorPanel products={products} onUpdateProductStatus={() => { }} onUpdateProductLogs={() => { }} username={profile.username} />} />
+          <Route path="/publish" element={<Publish products={products} onAddProduct={() => fetchMarketplace()} onUpdateProductStatus={() => {}} username={profile.username} />} />
+          <Route path="/creator" element={<CreatorPanel products={products} onUpdateProductStatus={() => {}} onUpdateProductLogs={() => {}} username={profile.username} />} />
           <Route path="/support" element={<Support products={products} username={profile.username} userRole={profile.role} />} />
           <Route path="/admin" element={profile.role === 'Admin' ? <AdminDashboard products={products} onSetProducts={setProducts} currentUsername={profile.username} /> : <Navigate to="/" />} />
-          <Route path="/settings" element={<Settings profile={profile} settings={{} as any} onUpdateProfile={(u) => setProfile({ ...profile, ...u })} onUpdateSettings={() => { }} />} />
+          <Route path="/settings" element={<Settings profile={profile} settings={{} as any} onUpdateProfile={(u) => setProfile({...profile, ...u})} onUpdateSettings={() => {}} />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -8,25 +8,28 @@ export interface ProductSpec {
 }
 
 export interface Product {
-  id: number;
+  id: number | string;
   title: string;
   format: string; 
   price: number; 
   category: string;
   img: string;
   creator: string;
-  creator_id?: string; // ADICIONADO: Para vincular ao ID do Supabase
+  creator_id?: string;
+  stripe_price_id?: string; // ADICIONADO: Para o App.tsx reconhecer o ID da Stripe
   description: string;
-  longDescription: string;
+  long_description?: string; // Sincronizado com o banco
   features: string[];
-  specs: ProductSpec;
-  rating: number;
-  downloads: number;
-  views: number;
-  status?: 'analyzing' | 'approved' | 'declined' | 'active'; // ADICIONADO: 'active'
-  zipFileName?: string;
-  scanLogs?: Array<{ time: string; message: string; type: 'info' | 'success' | 'warning' | 'error' }>;
-  scanSummary?: string;
+  specs: {
+    resolution: string;
+    software: string;
+    size: string;
+    updates: string;
+    slidesCount?: string;
+  };
+  status?: 'analyzing' | 'approved' | 'declined' | 'active';
+  downloads?: number;
+  views?: number;
 }
 
 export interface Transaction {
