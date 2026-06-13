@@ -83,14 +83,16 @@ export default function Checkout({
             </div>
 
             <div className="space-y-3 pt-4">
-              <button
-                onClick={handlePayment}
-                disabled={loading}
-                className="w-full py-5 bg-primary text-black font-black rounded-2xl shadow-[0_0_30px_rgba(0,224,255,0.3)] hover:scale-[1.02] active:scale-98 transition-all uppercase tracking-widest text-xs flex justify-center items-center gap-3"
-              >
-                <span className="material-symbols-outlined text-base">{loading ? 'sync' : 'lock'}</span>
-                {loading ? 'Redirecionando...' : 'Pagar com Stripe'}
-              </button>
+             <button
+  onClick={handlePayment}
+  disabled={loading}
+  className="..."
+>
+  <span className="material-symbols-outlined text-base">
+    {Number(product.price) === 0 ? 'redeem' : (loading ? 'sync' : 'lock')}
+  </span>
+  {loading ? 'Processando...' : (Number(product.price) === 0 ? 'Resgatar Gratuitamente' : 'Pagar com Stripe')}
+</button>
               
               <p className="text-[9px] text-center text-on-surface-variant leading-relaxed px-4">
                 Ao clicar, voce sera levado para o ambiente seguro da Stripe para realizar o pagamento real.

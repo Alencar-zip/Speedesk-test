@@ -95,22 +95,24 @@ app.post('/api/checkout', async (req: Request, res: Response) => {
 app.post('/api/products/publish', async (req: Request, res: Response) => {
     try {
         const { title, price, description, userId, category, img, format, features, specs } = req.body;
+        let stripePriceId = null;
 
-        // Validação de imagem: Stripe Live exige HTTPS real. 
-        // Se não for um link válido, enviamos sem imagem para não dar erro 500.
-        const validImages = (img && img.startsWith('https')) ? [img] : [];
+        // Só cria na Stripe se o preço for maior que zero
+        if (Number(price) > 0) {
+            const validImages = (img && img.startsWith('https')) ? [img] : [];
+            const stripeProduct = await stripe.products.create({
+                name: title,
+                description: description.substring(0, 127),
+                images: validImages
+            });
 
-        const stripeProduct = await stripe.products.create({
-            name: title,
-            description: description.substring(0, 127), // Stripe limita descrição curta
-            images: validImages
-        });
-
-        const stripePrice = await stripe.prices.create({
-            product: stripeProduct.id,
-            unit_amount: Math.max(Math.round(Number(price) * 100), 50), // Mínimo 0.50 centavos na Stripe
-            currency: 'brl',
-        });
+            const stripePrice = await stripe.prices.create({
+                product: stripeProduct.id,
+                unit_amount: Math.max(Math.round(Number(price) * 100), 50), 
+                currency: 'brl',
+            });
+            stripePriceId = stripePrice.id;
+        }
 
         const { data, error } = await supabase
             .from('products')
@@ -121,7 +123,7 @@ app.post('/api/products/publish', async (req: Request, res: Response) => {
                 img: img || "https://images.unsplash.com/photo-1451187580459-43490279c0fa",
                 format,
                 description,
-                stripe_price_id: stripePrice.id,
+                stripe_price_id: stripePriceId, // Pode ser null se for gratis
                 status: 'active',
                 creator_id: userId,
                 features,
