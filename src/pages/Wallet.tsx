@@ -22,35 +22,36 @@ export default function Wallet({ balance, transactions }: WalletProps) {
 
   // ITEM 3 & 4 INTEGRADO: Adicionar fundos via Stripe real
   const handleRealDeposit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
+  e.preventDefault();
+  setLoading(true);
+  
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    // Puxa o link do Render da Vercel
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
 
-      // Cria uma sessão de checkout para o valor selecionado
-      const response = await fetch(`${API_URL}/api/checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          userId: session?.user.id, 
-          price: Number(depositAmount), // Valor manual
-          mode: 'payment' // Depósito é compra de crédito único
-        })
-      });
+    const response = await fetch(`${API_URL}/api/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        userId: session?.user.id, 
+        priceAmount: Number(depositAmount), // Enviamos o VALOR agora
+        mode: 'payment'
+      })
+    });
 
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url; // Vai para o checkout da Stripe
-      }
-    } catch (err) {
-      alert("Erro na comunicacao com o servidor financeiro.");
-    } finally {
-      setLoading(false);
+    const data = await response.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      alert("Servidor nao devolveu link de pagamento.");
     }
-  };
-
+  } catch (err) {
+    alert("Erro ao conectar com o motor de pagamentos.");
+  } finally {
+    setLoading(false);
+  }
+};
   const handleWithdrawRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(withdrawAmount);

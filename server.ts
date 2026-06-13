@@ -68,25 +68,42 @@ app.get('/', (req, res) => {
 });
 
 // 4. ROTA DE CHECKOUT (Corrigida para aceitar compras únicas ou assinaturas)
+// server.ts - SUBSTITUA A ROTA /api/checkout POR ESTA
+
 app.post('/api/checkout', async (req: Request, res: Response) => {
     try {
-        const { priceId, userId, productId, mode } = req.body;
+        const { priceId, userId, productId, mode, priceAmount } = req.body;
         
+        let line_items;
+
+        // Se veio um valor manual (Carteira), criamos o preco na hora
+        if (priceAmount && !priceId) {
+            const tempPrice = await stripe.prices.create({
+                currency: 'brl',
+                unit_amount: Math.round(priceAmount * 100),
+                product_data: { name: 'Recarga de Saldo Speedesk' },
+            });
+            line_items = [{ price: tempPrice.id, quantity: 1 }];
+        } else {
+            // Se veio um produto da loja ou assinatura PRO
+            line_items = [{ price: priceId || process.env.STRIPE_PRO_PRICE_ID, quantity: 1 }];
+        }
+
         const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card'], 
-            line_items: [{ price: priceId, quantity: 1 }],
-            // 'payment' para ativos, 'subscription' para o plano PRO
+            payment_method_types: ['card'],
+            line_items: line_items,
             mode: mode || 'payment', 
-            success_url: `${FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+            success_url: `${FRONTEND_URL}/success`,
             cancel_url: `${FRONTEND_URL}/cancel`,
             metadata: { 
                 supabase_user_id: userId,
-                product_id: productId 
+                product_id: productId || 'wallet_topup'
             }
         });
+
         res.json({ url: session.url });
     } catch (e: any) {
-        console.error("Stripe Checkout Error:", e.message);
+        console.error("ERRO STRIPE:", e.message);
         res.status(500).json({ error: e.message });
     }
 });
