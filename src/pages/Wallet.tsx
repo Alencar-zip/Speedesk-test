@@ -90,7 +90,7 @@ export default function Wallet({ balance, transactions }: WalletProps) {
       <header className="flex justify-between items-end mb-10">
         <div>
           <h2 className="text-4xl font-bold text-white tracking-tighter">Carteira Digital</h2>
-          <p className="text-on-surface-variant text-sm mt-1">Sincronizado com rede Aetheric de pagamentos.</p>
+          <p className="text-on-surface-variant text-sm mt-1">Sua carteira digital. Retire, saque e monitore suas transações.</p>
         </div>
         <div className="px-4 py-2 bg-primary/5 border border-primary/20 rounded-full flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
