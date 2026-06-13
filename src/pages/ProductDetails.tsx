@@ -1,11 +1,11 @@
 import { supabase } from '../lib/supabase';
-import React, { useState } from 'react';
+import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Product } from '../types';
 
 interface ProductDetailsProps {
   products: Product[];
-  libraryIds: (number | string)[]; // Ajustado para aceitar UUID do Supabase
+  libraryIds: (number | string)[];
   favoriteIds: (number | string)[];
   onToggleFavorite: (id: number | string) => void;
 }
@@ -22,7 +22,7 @@ export default function ProductDetails({ products, libraryIds, favoriteIds, onTo
       <div className="text-center py-20 animate-fade-in">
         <span className="material-symbols-outlined text-5xl text-error mb-4">warning</span>
         <h2 className="text-xl font-bold font-display text-white mb-2">Ativo não encontrado</h2>
-        <p className="text-xs text-on-surface-variant mb-6">O produto solicitado não foi identificado no núcleo de dados.</p>
+        <p className="text-xs text-on-surface-variant mb-6">O produto solicitado não foi identificado no banco de dados.</p>
         <Link to="/" className="bg-primary text-black font-bold px-6 py-2 rounded-xl text-xs font-mono tracking-wider hover:scale-105 transition-all">
           Voltar ao Marketplace
         </Link>
@@ -36,33 +36,28 @@ export default function ProductDetails({ products, libraryIds, favoriteIds, onTo
   // LÓGICA DE DOWNLOAD REAL (CONFORME PDF PÁG. 5)
   const handleDownload = async () => {
     try {
-      // 1. Verificamos se o produto tem a referência do arquivo no banco
-     const filePath = product.file_path || ""; // Garante que não seja undefined
+      const filePath = product.file_path;
       
       if (!filePath) {
-        alert("Erro: O arquivo fonte não foi localizado para este ativo.");
+        alert("Erro: O arquivo fonte não foi localizado para este ativo no servidor.");
         return;
       }
 
-      // 2. Geramos uma URL assinada que expira em 15 minutos (900 segundos)
+      // Gera link assinado que expira em 15 minutos
       const { data, error } = await supabase.storage
         .from('assets')
-        .createSignedUrl(filePath, 900);
+        .createSignedUrl(filePath, 900, {
+          download: `${product.title}.zip`
+        });
 
       if (error) throw error;
 
       if (data?.signedUrl) {
-        // 3. Criamos um link invisível para disparar o download no navegador
-        const link = document.createElement('a');
-        link.href = data.signedUrl;
-        link.setAttribute('download', `${product.title}.zip`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        window.location.assign(data.signedUrl);
       }
     } catch (err: any) {
       console.error("Erro no download:", err.message);
-      alert("Falha ao gerar link seguro. Verifique sua conexão.");
+      alert("Falha ao gerar link seguro. Certifique-se de estar logado.");
     }
   };
 
@@ -70,44 +65,35 @@ export default function ProductDetails({ products, libraryIds, favoriteIds, onTo
     <div className="pb-20 animate-fade-in relative">
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
 
+      {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-[10px] font-mono text-on-surface-variant mb-8 uppercase tracking-wider">
         <Link to="/" className="hover:text-primary transition-colors">Marketplace</Link>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
         <span className="text-on-surface-variant">{product.category}</span>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-primary font-bold truncate max-w-[150px] sm:max-w-none">{product.title}</span>
+        <span className="text-primary font-bold truncate max-w-[150px]">{product.title}</span>
       </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Esquerda: Visualizador */}
         <div className="lg:col-span-7 space-y-6">
           <div className="bg-[#1d2022]/30 border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative group">
             <div className="aspect-video relative overflow-hidden">
               <img 
                 src={product.img} 
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "https://lh3.googleusercontent.com/aida-public/AB6AXuCDy5mT0iUelOWZn1HgzqtPiCEi3ZzirCZ8RKyHSisN8-qRxmj7fNdJ9YgLgPMLZBWUVjJfKI1q5sfaHU_iwnSMpCvKHLIrc8Q1P9XNl7WHONpqgqDbrRAPZ8pap4OBq-AHVZgEM03Aez2nozY7XD6ihBX_SykdEYJFSM3l-FFkmDKFDqYcewsPSb3kLkS6iQ5EOeh85Z8KM8GM_4V52DirOoTMQ5nUC7kpFLt7u0_-DnFXcQNZLo-HxUjFNm3f2s_K7s3Fl9l-xQ";
-                }}
                 alt={product.title}
-                className="w-full h-full object-cover transition-transform duration-700 hover:scale-102"
+                className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />
               <div className="absolute top-4 left-4 bg-black/80 border border-white/10 px-3 py-1 rounded-full text-[9px] font-mono font-bold text-primary uppercase">
                 {product.format}
               </div>
             </div>
-
-            <div className="bg-black/60 p-4 border-t border-white/5 flex items-center justify-between">
-              <span className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-semibold">Galeria de Visualização</span>
-              <div className="flex gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-primary" />
-                <span className="w-2 h-2 rounded-full bg-white/20" />
-                <span className="w-2 h-2 rounded-full bg-white/20" />
-              </div>
-            </div>
           </div>
 
+          {/* Especificações Técnicas */}
           <div className="bg-[#1d2022] rounded-2xl p-6 border border-white/5 space-y-4">
-            <h4 className="text-sm font-bold font-display text-white uppercase tracking-wider border-b border-white/5 pb-2">Especificações Técnicas</h4>
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider border-b border-white/5 pb-2">Especificações Técnicas</h4>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
               <div className="bg-[#101415]/75 p-3 rounded-xl border border-white/5 text-center">
                 <span className="text-[9px] text-[#bac9cd]/50 uppercase block mb-1">Resolução</span>
@@ -129,38 +115,28 @@ export default function ProductDetails({ products, libraryIds, favoriteIds, onTo
           </div>
         </div>
 
+        {/* Direita: Compra e Ações */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-[#1d2022]/50 border border-[#3b494c]/20 p-6 rounded-3xl shadow-xl space-y-6 flex flex-col justify-between">
+          <div className="bg-[#1d2022]/50 border border-[#3b494c]/20 p-6 rounded-3xl shadow-xl space-y-6">
             <div>
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-on-surface-variant flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary text-lg">verified_user</span>
-                  <span className="text-xs font-semibold text-on-surface-variant">
-                    Estúdio: <span className="text-white hover:underline cursor-pointer">{product.creator}</span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 bg-[#272a2c] px-2.5 py-0.5 rounded text-xs text-[#ffb4ab]">
-                  <span className="material-symbols-outlined text-[14px]">star</span>
-                  <span className="font-mono font-bold">{product.rating || '5.0'}</span>
+                  {product.creator}
+                </span>
+                <div className="bg-[#272a2c] px-2 py-0.5 rounded text-xs text-[#ffb4ab] font-bold">
+                  ★ {product.rating || '5.0'}
                 </div>
               </div>
 
-              <h1 className="text-2xl md:text-3xl font-black font-display text-white leading-tight mb-3">{product.title}</h1>
-
-              <div className="flex gap-4 mb-4 text-[10px] font-mono text-on-surface-variant">
-                <span className="bg-[#101415]/50 px-2 py-1 rounded">Visitas: {product.views || 0}</span>
-                <span className="bg-[#101415]/50 px-2 py-1 rounded">Vendas: {product.downloads || 0}</span>
-              </div>
-
-              <p className="text-xs text-on-surface-variant leading-relaxed mb-6">
-                {product.description}
-              </p>
+              <h1 className="text-2xl font-black text-white leading-tight mb-3">{product.title}</h1>
+              <p className="text-xs text-on-surface-variant leading-relaxed mb-6">{product.description}</p>
 
               <div className="space-y-2 mb-6">
-                <p className="text-[10px] font-mono text-primary uppercase tracking-wider font-bold">Incluso no pacote:</p>
+                <p className="text-[10px] font-mono text-primary uppercase font-bold tracking-widest">Incluso no pacote:</p>
                 {product.features?.map((feat, idx) => (
                   <div key={idx} className="flex items-start gap-2 text-xs text-[#e0e3e5]">
-                    <span className="material-symbols-outlined text-primary text-[16px] mt-0.5" style={{fontVariationSettings: "'FILL' 1"}}>check_circle</span>
+                    <span className="material-symbols-outlined text-primary text-[16px] mt-0.5">check_circle</span>
                     <span>{feat}</span>
                   </div>
                 ))}
@@ -168,45 +144,36 @@ export default function ProductDetails({ products, libraryIds, favoriteIds, onTo
             </div>
 
             <div className="bg-[#101415]/80 p-4 rounded-2xl border border-white/5">
-              <div className="flex items-baseline justify-between mb-4">
-                <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">Valor do Ativo</span>
-                <div className="text-right">
-                  <span className="text-primary-container text-2xl font-black font-mono">
-                    R$ {Number(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
+              <div className="flex justify-between mb-4">
+                <span className="text-xs font-mono text-on-surface-variant uppercase">Investimento</span>
+                <span className="text-primary-container text-2xl font-black font-mono">
+                  R$ {Number(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
               </div>
 
               {isPurchased ? (
-                <div className="space-y-2.5">
-                  <div className="bg-primary/10 text-primary rounded-xl p-2.5 border border-primary/25 text-center text-xs font-medium">
-                    ✓ Você já adquiriu este ativo digital!
-                  </div>
-                  <button
-                    onClick={handleDownload}
-                    className="w-full bg-primary-container text-black font-extrabold py-3 rounded-xl transition-all shadow-lg hover:scale-102 flex items-center justify-center gap-2 cursor-pointer text-sm"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">download</span>
-                    BAIXAR ARQUIVO AGORA
-                  </button>
-                </div>
+                <button 
+                  onClick={handleDownload}
+                  className="w-full bg-primary-container text-black font-black py-4 rounded-xl shadow-lg hover:scale-102 transition-all flex items-center justify-center gap-2 text-sm"
+                >
+                  <span className="material-symbols-outlined">download</span>
+                  BAIXAR ATIVO AGORA
+                </button>
               ) : (
                 <div className="grid grid-cols-12 gap-2">
-                  <button
+                  <button 
                     onClick={() => navigate(`/checkout/${product.id}`)}
-                    className="col-span-10 bg-primary-container text-black font-extrabold py-3 rounded-xl transition-all hover:scale-102 cursor-pointer shadow-lg text-center text-sm"
+                    className="col-span-10 bg-primary-container text-black font-black py-4 rounded-xl shadow-lg text-sm"
                   >
                     ADQUIRIR ATIVO
                   </button>
-                  <button
+                  <button 
                     onClick={() => onToggleFavorite(product.id)}
-                    className={`col-span-2 rounded-xl flex items-center justify-center transition-all cursor-pointer border ${
+                    className={`col-span-2 rounded-xl flex items-center justify-center border transition-all ${
                       isFavorite ? 'bg-[#ffb4ab]/10 border-[#ffb4ab] text-[#ffb4ab]' : 'bg-white/5 border-white/10 text-[#bac9cd]'
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[18px]" style={{fontVariationSettings: isFavorite ? "'FILL' 1" : undefined}}>
-                      favorite
-                    </span>
+                    <span className="material-symbols-outlined">{isFavorite ? 'favorite' : 'favorite_border'}</span>
                   </button>
                 </div>
               )}
