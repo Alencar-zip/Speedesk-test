@@ -16,9 +16,10 @@ export interface Product {
   img: string;
   creator: string;
   creator_id?: string;
-  stripe_price_id?: string; // ADICIONADO: Para o App.tsx reconhecer o ID da Stripe
+  stripe_price_id?: string;
+  file_path?: string; // ADICIONADO: Para o download seguro
   description: string;
-  long_description?: string; // Sincronizado com o banco
+  long_description?: string;
   features: string[];
   specs: {
     resolution: string;
@@ -26,10 +27,12 @@ export interface Product {
     size: string;
     updates: string;
     slidesCount?: string;
+    fileFormat?: string;
   };
-  status?: 'analyzing' | 'approved' | 'declined' | 'active';
+  rating?: number; // ADICIONADO: Para a nota das estrelas
   downloads?: number;
   views?: number;
+  status?: 'analyzing' | 'approved' | 'declined' | 'active';
 }
 
 export interface Transaction {

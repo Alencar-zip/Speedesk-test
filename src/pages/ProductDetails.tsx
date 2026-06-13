@@ -1,11 +1,12 @@
+import { supabase } from '../lib/supabase';
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Product } from '../types';
 
 interface ProductDetailsProps {
   products: Product[];
-  libraryIds: (number | string)[]; // Ajustado para aceitar UUID
-  favoriteIds: (number | string)[]; // Ajustado para aceitar UUID
+  libraryIds: (number | string)[]; // Ajustado para aceitar UUID do Supabase
+  favoriteIds: (number | string)[];
   onToggleFavorite: (id: number | string) => void;
 }
 
@@ -13,7 +14,7 @@ export default function ProductDetails({ products, libraryIds, favoriteIds, onTo
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // BUSCA CORRIGIDA: Compara como String para suportar tanto Number quanto UUID
+  // Busca o produto comparando como string para suportar tanto UUID quanto Number
   const product = products.find((p) => String(p.id) === String(id));
 
   if (!product) {
@@ -21,7 +22,7 @@ export default function ProductDetails({ products, libraryIds, favoriteIds, onTo
       <div className="text-center py-20 animate-fade-in">
         <span className="material-symbols-outlined text-5xl text-error mb-4">warning</span>
         <h2 className="text-xl font-bold font-display text-white mb-2">Ativo não encontrado</h2>
-        <p className="text-xs text-on-surface-variant mb-6">O produto solicitado não foi identificado no banco de dados.</p>
+        <p className="text-xs text-on-surface-variant mb-6">O produto solicitado não foi identificado no núcleo de dados.</p>
         <Link to="/" className="bg-primary text-black font-bold px-6 py-2 rounded-xl text-xs font-mono tracking-wider hover:scale-105 transition-all">
           Voltar ao Marketplace
         </Link>
@@ -29,12 +30,40 @@ export default function ProductDetails({ products, libraryIds, favoriteIds, onTo
     );
   }
 
-  // Verificação de posse e favorito usando String para segurança
   const isPurchased = libraryIds.some(libId => String(libId) === String(product.id));
   const isFavorite = favoriteIds.some(favId => String(favId) === String(product.id));
 
-  const simulateDownload = () => {
-    alert(`Preparando download de "${product.title}${product.specs.fileFormat || '.zip'}"...\nSeu download de ${product.specs.size} comecará em instantes.`);
+  // LÓGICA DE DOWNLOAD REAL (CONFORME PDF PÁG. 5)
+  const handleDownload = async () => {
+    try {
+      // 1. Verificamos se o produto tem a referência do arquivo no banco
+     const filePath = product.file_path || ""; // Garante que não seja undefined
+      
+      if (!filePath) {
+        alert("Erro: O arquivo fonte não foi localizado para este ativo.");
+        return;
+      }
+
+      // 2. Geramos uma URL assinada que expira em 15 minutos (900 segundos)
+      const { data, error } = await supabase.storage
+        .from('assets')
+        .createSignedUrl(filePath, 900);
+
+      if (error) throw error;
+
+      if (data?.signedUrl) {
+        // 3. Criamos um link invisível para disparar o download no navegador
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.setAttribute('download', `${product.title}.zip`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (err: any) {
+      console.error("Erro no download:", err.message);
+      alert("Falha ao gerar link seguro. Verifique sua conexão.");
+    }
   };
 
   return (
@@ -66,10 +95,12 @@ export default function ProductDetails({ products, libraryIds, favoriteIds, onTo
                 {product.format}
               </div>
             </div>
+
             <div className="bg-black/60 p-4 border-t border-white/5 flex items-center justify-between">
               <span className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider font-semibold">Galeria de Visualização</span>
               <div className="flex gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-primary" />
+                <span className="w-2 h-2 rounded-full bg-white/20" />
                 <span className="w-2 h-2 rounded-full bg-white/20" />
               </div>
             </div>
@@ -92,7 +123,7 @@ export default function ProductDetails({ products, libraryIds, favoriteIds, onTo
               </div>
               <div className="bg-[#101415]/75 p-3 rounded-xl border border-white/5 text-center">
                 <span className="text-[9px] text-[#bac9cd]/50 uppercase block mb-1">Suporte</span>
-                <span className="font-bold text-white">{product.specs?.updates || 'Sim'}</span>
+                <span className="font-bold text-white">{product.specs?.updates || 'Vitalícias'}</span>
               </div>
             </div>
           </div>
@@ -105,7 +136,7 @@ export default function ProductDetails({ products, libraryIds, favoriteIds, onTo
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary text-lg">verified_user</span>
                   <span className="text-xs font-semibold text-on-surface-variant">
-                    Estúdio: <span className="text-white">{product.creator}</span>
+                    Estúdio: <span className="text-white hover:underline cursor-pointer">{product.creator}</span>
                   </span>
                 </div>
                 <div className="flex items-center gap-1 bg-[#272a2c] px-2.5 py-0.5 rounded text-xs text-[#ffb4ab]">
@@ -121,13 +152,15 @@ export default function ProductDetails({ products, libraryIds, favoriteIds, onTo
                 <span className="bg-[#101415]/50 px-2 py-1 rounded">Vendas: {product.downloads || 0}</span>
               </div>
 
-              <p className="text-xs text-on-surface-variant leading-relaxed mb-6">{product.description}</p>
+              <p className="text-xs text-on-surface-variant leading-relaxed mb-6">
+                {product.description}
+              </p>
 
               <div className="space-y-2 mb-6">
                 <p className="text-[10px] font-mono text-primary uppercase tracking-wider font-bold">Incluso no pacote:</p>
                 {product.features?.map((feat, idx) => (
                   <div key={idx} className="flex items-start gap-2 text-xs text-[#e0e3e5]">
-                    <span className="material-symbols-outlined text-primary text-[16px] mt-0.5">check_circle</span>
+                    <span className="material-symbols-outlined text-primary text-[16px] mt-0.5" style={{fontVariationSettings: "'FILL' 1"}}>check_circle</span>
                     <span>{feat}</span>
                   </div>
                 ))}
@@ -136,21 +169,44 @@ export default function ProductDetails({ products, libraryIds, favoriteIds, onTo
 
             <div className="bg-[#101415]/80 p-4 rounded-2xl border border-white/5">
               <div className="flex items-baseline justify-between mb-4">
-                <span className="text-xs font-mono text-on-surface-variant uppercase">Valor do Ativo</span>
+                <span className="text-xs font-mono text-on-surface-variant uppercase tracking-wider">Valor do Ativo</span>
                 <div className="text-right">
-                  <span className="text-primary-container text-2xl font-black font-mono">R$ {Number(product.price).toFixed(2)}</span>
+                  <span className="text-primary-container text-2xl font-black font-mono">
+                    R$ {Number(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
               </div>
 
               {isPurchased ? (
-                <button onClick={simulateDownload} className="w-full bg-primary-container text-black font-extrabold py-3 rounded-xl transition-all shadow-lg text-sm flex items-center justify-center gap-2">
-                  <span className="material-symbols-outlined">download</span> BAIXAR AGORA
-                </button>
+                <div className="space-y-2.5">
+                  <div className="bg-primary/10 text-primary rounded-xl p-2.5 border border-primary/25 text-center text-xs font-medium">
+                    ✓ Você já adquiriu este ativo digital!
+                  </div>
+                  <button
+                    onClick={handleDownload}
+                    className="w-full bg-primary-container text-black font-extrabold py-3 rounded-xl transition-all shadow-lg hover:scale-102 flex items-center justify-center gap-2 cursor-pointer text-sm"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">download</span>
+                    BAIXAR ARQUIVO AGORA
+                  </button>
+                </div>
               ) : (
                 <div className="grid grid-cols-12 gap-2">
-                  <button onClick={() => navigate(`/checkout/${product.id}`)} className="col-span-10 bg-primary-container text-black font-extrabold py-3 rounded-xl shadow-lg text-sm">ADQUIRIR ATIVO</button>
-                  <button onClick={() => onToggleFavorite(product.id)} className={`col-span-2 rounded-xl flex items-center justify-center border ${isFavorite ? 'border-primary text-primary' : 'border-white/10 text-on-surface-variant'}`}>
-                    <span className="material-symbols-outlined text-[18px]">{isFavorite ? 'favorite' : 'favorite_border'}</span>
+                  <button
+                    onClick={() => navigate(`/checkout/${product.id}`)}
+                    className="col-span-10 bg-primary-container text-black font-extrabold py-3 rounded-xl transition-all hover:scale-102 cursor-pointer shadow-lg text-center text-sm"
+                  >
+                    ADQUIRIR ATIVO
+                  </button>
+                  <button
+                    onClick={() => onToggleFavorite(product.id)}
+                    className={`col-span-2 rounded-xl flex items-center justify-center transition-all cursor-pointer border ${
+                      isFavorite ? 'bg-[#ffb4ab]/10 border-[#ffb4ab] text-[#ffb4ab]' : 'bg-white/5 border-white/10 text-[#bac9cd]'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[18px]" style={{fontVariationSettings: isFavorite ? "'FILL' 1" : undefined}}>
+                      favorite
+                    </span>
                   </button>
                 </div>
               )}
