@@ -75,6 +75,7 @@ export default function Publish({ onAddProduct, username }: PublishProps) {
       if (storageError) throw storageError;
 
       // 2. Chamada ao Servidor para criar na Stripe e no Banco
+      // 2. Chamada ao Servidor para criar na Stripe e no Banco
       const finalImg = customImgUrl.trim() || selectedImg;
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
 
@@ -90,7 +91,8 @@ export default function Publish({ onAddProduct, username }: PublishProps) {
           img: finalImg,
           format,
           features,
-          specs: { resolution, software, size: (actualFile.size / 1024 / 1024).toFixed(1) + " MB", updates: 'Vitalicias', slidesCount }
+          file_path: fileName, // <--- ADICIONE ESTA LINHA (Era o que faltava!)
+          specs: { resolution, software, size: (actualFile.size / 1024 / 1024).toFixed(1) + " MB", updates: 'Vitalícias', slidesCount }
         })
       });
 

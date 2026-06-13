@@ -94,10 +94,10 @@ app.post('/api/checkout', async (req: Request, res: Response) => {
 // ROTA DE PUBLICAÇÃO (Blindada contra links de imagem inválidos)
 app.post('/api/products/publish', async (req: Request, res: Response) => {
     try {
-        const { title, price, description, userId, category, img, format, features, specs } = req.body;
+        // 1. Adicionamos 'file_path' na lista de coisas que o servidor recebe
+        const { title, price, description, userId, category, img, format, features, specs, file_path } = req.body;
         let stripePriceId = null;
 
-        // Só cria na Stripe se o preço for maior que zero
         if (Number(price) > 0) {
             const validImages = (img && img.startsWith('https')) ? [img] : [];
             const stripeProduct = await stripe.products.create({
@@ -114,6 +114,7 @@ app.post('/api/products/publish', async (req: Request, res: Response) => {
             stripePriceId = stripePrice.id;
         }
 
+        // 2. Incluimos o 'file_path' no comando de salvar no banco
         const { data, error } = await supabase
             .from('products')
             .insert([{
@@ -123,11 +124,12 @@ app.post('/api/products/publish', async (req: Request, res: Response) => {
                 img: img || "https://images.unsplash.com/photo-1451187580459-43490279c0fa",
                 format,
                 description,
-                stripe_price_id: stripePriceId, // Pode ser null se for gratis
+                stripe_price_id: stripePriceId,
                 status: 'active',
                 creator_id: userId,
                 features,
-                specs
+                specs,
+                file_path: file_path // <--- ADICIONE ESTA LINHA
             }])
             .select()
             .single();
@@ -135,7 +137,7 @@ app.post('/api/products/publish', async (req: Request, res: Response) => {
         if (error) throw error;
         res.json(data);
     } catch (e: any) {
-        console.error("Erro na Publicacao:", e.message);
+        console.error("Falha na publicacao:", e.message);
         res.status(500).json({ error: e.message });
     }
 });
