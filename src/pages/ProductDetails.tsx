@@ -35,31 +35,39 @@ export default function ProductDetails({ products, libraryIds, favoriteIds, onTo
 
   // LÓGICA DE DOWNLOAD REAL (CONFORME PDF PÁG. 5)
   const handleDownload = async () => {
-    try {
-      const filePath = product.file_path;
+  try {
+    const path = product.file_path;
+    if (!path) return alert("Arquivo nao encontrado no banco.");
+
+    // 1. Gerar a URL Assinada
+    const { data, error } = await supabase.storage
+      .from('assets')
+      .createSignedUrl(path, 60); // Link dura 60 segundos
+
+    if (error) throw error;
+
+    if (data?.signedUrl) {
+      // 2. MÉTODO INFALÍVEL: Usar fetch para pegar o arquivo e criar um link local
+      // Isso evita bloqueios de pop-up e problemas de domínio
+      const response = await fetch(data.signedUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
       
-      if (!filePath) {
-        alert("Erro: O arquivo fonte não foi localizado para este ativo no servidor.");
-        return;
-      }
-
-      // Gera link assinado que expira em 15 minutos
-      const { data, error } = await supabase.storage
-        .from('assets')
-        .createSignedUrl(filePath, 900, {
-          download: `${product.title}.zip`
-        });
-
-      if (error) throw error;
-
-      if (data?.signedUrl) {
-        window.location.assign(data.signedUrl);
-      }
-    } catch (err: any) {
-      console.error("Erro no download:", err.message);
-      alert("Falha ao gerar link seguro. Certifique-se de estar logado.");
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `${product.title.replace(/\s+/g, '_')}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Limpeza
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
     }
-  };
+  } catch (err: any) {
+    console.error(err);
+    alert("Erro ao processar download.");
+  }
+};
 
   return (
     <div className="pb-20 animate-fade-in relative">

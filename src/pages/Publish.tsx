@@ -58,24 +58,35 @@ export default function Publish({ onAddProduct, username }: PublishProps) {
     if (e.dataTransfer.files?.[0]) setActualFile(e.dataTransfer.files[0]);
   };
 
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setActualFile(e.target.files[0]);
+    }
+  };
+
   // 5. SUBMISSÃO PARA O ECOSSISTEMA
   const handlePublishSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!actualFile) return alert("Anexe o arquivo ZIP do produto.");
+    if (!actualFile) return alert("Aviso: Anexe o arquivo ZIP do produto para continuar.");
 
     setLoading(true);
     try {
       const { data: auth } = await supabase.auth.getUser();
       const user = auth.user;
-      if (!user) return alert("Faca login novamente.");
+      if (!user) return alert("Erro: Faca login novamente para publicar.");
 
       // 1. Upload do arquivo para o Storage
-      const fileName = `${Date.now()}-${actualFile.name}`;
+      const fileName = `${Date.now()}-${actualFile.name.replace(/\s+/g, '_')}`;
       const { error: storageError } = await supabase.storage.from('assets').upload(fileName, actualFile);
       if (storageError) throw storageError;
 
-      // 2. Chamada ao Servidor para criar na Stripe e no Banco
-      // 2. Chamada ao Servidor para criar na Stripe e no Banco
+      // 2. Cálculo inteligente de tamanho (Resolve erro de 0.0 MB)
+      const bytes = actualFile.size;
+      const sizeFormatted = bytes < 1024 * 1024 
+        ? (bytes / 1024).toFixed(1) + " KB" 
+        : (bytes / (1024 * 1024)).toFixed(1) + " MB";
+
+      // 3. Chamada ao Servidor para criar na Stripe e no Banco
       const finalImg = customImgUrl.trim() || selectedImg;
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4242';
 
@@ -91,16 +102,22 @@ export default function Publish({ onAddProduct, username }: PublishProps) {
           img: finalImg,
           format,
           features,
-          file_path: fileName, // <--- ADICIONE ESTA LINHA (Era o que faltava!)
-          specs: { resolution, software, size: (actualFile.size / 1024 / 1024).toFixed(1) + " MB", updates: 'Vitalícias', slidesCount }
+          file_path: fileName, // Enviando caminho para o banco
+          specs: { 
+            resolution, 
+            software, 
+            size: sizeFormatted, 
+            updates: 'Vitalicias', 
+            slidesCount 
+          }
         })
       });
 
-      if (!response.ok) throw new Error("Erro na integracao financeira.");
+      if (!response.ok) throw new Error("Falha na sincronizacao financeira.");
 
       const dbProduct = await response.json();
       onAddProduct(dbProduct);
-      alert("Ativo publicado e integrado a Stripe com sucesso.");
+      alert("Sucesso: Ativo publicado no ecossistema.");
       navigate('/creator');
 
     } catch (err: any) {
@@ -112,7 +129,9 @@ export default function Publish({ onAddProduct, username }: PublishProps) {
 
   return (
     <div className="pb-20 animate-fade-in relative max-w-4xl mx-auto">
+      {/* Design System: Background lights */}
       <div className="absolute top-1/4 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 left-0 w-80 h-80 bg-[#c0c1ff]/5 rounded-full blur-[100px] pointer-events-none" />
       
       <header className="mb-10">
         <h1 className="text-4xl font-black text-primary font-display tracking-tighter mb-2">Editor & Publicador</h1>
@@ -191,7 +210,7 @@ export default function Publish({ onAddProduct, username }: PublishProps) {
                 </button>
               ))}
             </div>
-            <input type="url" placeholder="URL da imagem customizada" value={customImgUrl} onChange={e => setCustomImgUrl(e.target.value)} className="w-full bg-[#101415] border border-white/10 rounded-xl px-4 py-3 text-[10px] text-white outline-none" />
+            <input type="url" placeholder="Ou cole a URL de uma imagem externa" value={customImgUrl} onChange={e => setCustomImgUrl(e.target.value)} className="w-full bg-[#101415] border border-white/10 rounded-xl px-4 py-3 text-[10px] text-white outline-none" />
           </div>
 
           <div className="space-y-4">
@@ -200,7 +219,7 @@ export default function Publish({ onAddProduct, username }: PublishProps) {
               onDragOver={handleDrag} onDragEnter={handleDrag} onDragLeave={handleDrag} onDrop={handleDrop}
               className={`h-[150px] border-2 border-dashed rounded-3xl flex flex-col items-center justify-center transition-all bg-[#101415]/30 ${dragActive ? 'border-primary bg-primary/5' : actualFile ? 'border-green-500/40' : 'border-white/10 hover:border-white/20'}`}
             >
-              <input type="file" accept=".zip" onChange={e => e.target.files?.[0] && setActualFile(e.target.files[0])} className="hidden" id="zip-upload" />
+              <input type="file" accept=".zip" onChange={handleFileInput} className="hidden" id="zip-upload" />
               <label htmlFor="zip-upload" className="cursor-pointer text-center p-4">
                 <span className="material-symbols-outlined text-3xl text-primary mb-2">upload_file</span>
                 <p className="text-[10px] font-bold uppercase tracking-wider">{actualFile ? actualFile.name : "Clique ou Arraste o arquivo"}</p>
@@ -210,7 +229,7 @@ export default function Publish({ onAddProduct, username }: PublishProps) {
         </div>
 
         <button type="submit" disabled={loading} className="w-full py-5 bg-primary text-black font-black rounded-2xl shadow-[0_0_30px_rgba(0,224,255,0.4)] hover:scale-[1.01] active:scale-95 transition-all uppercase tracking-[3px] text-xs disabled:opacity-50">
-          {loading ? 'PUBLICANDO NO ECOSSISTEMA...' : 'Publicar Ativo & Gerar Triagem'}
+          {loading ? 'Sincronizando com a Nuvem...' : 'Publicar Ativo & Gerar Triagem'}
         </button>
       </form>
     </div>
